@@ -22,22 +22,22 @@ data class HistoryUiState(
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     getSessionHistory: GetSessionHistoryUseCase,
-    getPracticeStats: GetPracticeStatsUseCase
+    private val getPracticeStats: GetPracticeStatsUseCase
 ) : ViewModel() {
 
-    val uiState: StateFlow<HistoryUiState> = combine(
-        getSessionHistory(),
-        getPracticeStats()
-    ) { sessions, stats ->
-        val best = sessions.maxByOrNull { it.transitionCount }
-        HistoryUiState(
-            sessions = sessions,
-            stats = stats,
-            bestSessionId = best?.id
+    val uiState: StateFlow<HistoryUiState> = getSessionHistory()
+        .map { sessions ->
+            val best = sessions.maxByOrNull { it.transitionCount }
+            val stats = getPracticeStats.calculateStats(sessions)
+            HistoryUiState(
+                sessions = sessions,
+                stats = stats,
+                bestSessionId = best?.id
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = HistoryUiState()
         )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = HistoryUiState()
-    )
 }

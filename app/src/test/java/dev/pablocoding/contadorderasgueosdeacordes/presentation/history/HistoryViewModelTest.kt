@@ -26,7 +26,7 @@ class HistoryViewModelTest {
     @Test
     fun `uiState calculates correct stats for empty history`() = runTest {
         every { getSessionHistoryUseCase() } returns flowOf(emptyList())
-        every { getPracticeStatsUseCase(any(), any()) } returns flowOf(UserPracticeStats())
+        every { getPracticeStatsUseCase.calculateStats(emptyList(), any(), any()) } returns UserPracticeStats()
 
         val viewModel = HistoryViewModel(getSessionHistoryUseCase, getPracticeStatsUseCase)
 
@@ -61,7 +61,7 @@ class HistoryViewModelTest {
             longestStreakDays = 1
         )
         every { getSessionHistoryUseCase() } returns flowOf(sessions)
-        every { getPracticeStatsUseCase(any(), any()) } returns flowOf(mockStats)
+        every { getPracticeStatsUseCase.calculateStats(sessions, any(), any()) } returns mockStats
 
         val viewModel = HistoryViewModel(getSessionHistoryUseCase, getPracticeStatsUseCase)
 

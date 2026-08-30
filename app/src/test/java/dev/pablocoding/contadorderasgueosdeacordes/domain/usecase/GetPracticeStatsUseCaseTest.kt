@@ -79,6 +79,9 @@ class GetPracticeStatsUseCaseTest {
         // Peak SPM: Session 2 had 30 in 30s = 60 SPM; Session 1 had 50/60 = 50 SPM; Session 3 had 80/120 = 40 SPM -> Peak 60 SPM
         assertEquals(60.0, stats.peakSpeedSpm, 0.001)
         assertEquals(80, stats.bestSessionCount)
+        assertEquals(3, stats.sessionsThisWeek)
+        assertEquals(160L, stats.strumsThisWeek)
+        assertEquals(3, stats.minutesThisWeek) // 210s / 60 = 3 min
     }
 
     @Test

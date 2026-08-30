@@ -164,7 +164,7 @@ private fun StatsDashboard(stats: UserPracticeStats, modifier: Modifier = Modifi
                 icon = "⏱",
                 title = "Practice Time",
                 value = formatTotalTime(stats.totalPracticeSeconds),
-                subtitle = "${stats.totalSessions} sessions",
+                subtitle = "${stats.totalSessions} sessions (${stats.minutesThisWeek}m this wk)",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -204,9 +204,9 @@ private fun StatsDashboard(stats: UserPracticeStats, modifier: Modifier = Modifi
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SecondaryStatItem(label = "🏆 Best Session", value = "${stats.bestSessionCount} trans")
-                SecondaryStatItem(label = "📊 Avg / Session", value = "${stats.averageTransitionsPerSession.roundToInt()} trans")
-                SecondaryStatItem(label = "🎶 Chords Mastered", value = "${stats.uniqueChordsCount} chords")
+                SecondaryStatItem(label = "🏆 Best Record", value = "${stats.bestSessionCount} trans")
+                SecondaryStatItem(label = "📅 This Week", value = "${stats.sessionsThisWeek} ses · ${stats.strumsThisWeek} strums")
+                SecondaryStatItem(label = "🎶 Mastered", value = "${stats.uniqueChordsCount} chords")
             }
         }
     }
