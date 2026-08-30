@@ -12,6 +12,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.pablocoding.contadorderasgueosdeacordes.data.db.AppDatabase
+import dev.pablocoding.contadorderasgueosdeacordes.data.db.MIGRATION_1_2
 import dev.pablocoding.contadorderasgueosdeacordes.data.db.dao.SessionDao
 import dev.pablocoding.contadorderasgueosdeacordes.data.repository.MetronomeRepositoryImpl
 import dev.pablocoding.contadorderasgueosdeacordes.data.repository.SessionHistoryRepositoryImpl
@@ -62,7 +63,9 @@ abstract class AppModule {
                 context,
                 AppDatabase::class.java,
                 "chord_counter_db"
-            ).build()
+            )
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
         @Provides
         @Singleton

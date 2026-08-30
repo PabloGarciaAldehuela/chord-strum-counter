@@ -27,6 +27,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,12 +43,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -92,6 +98,9 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordDiagramSheet
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordSelectionSheet
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,6 +114,8 @@ fun CounterScreen(
     val context = LocalContext.current
 
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var showChordSelectionSheet by remember { mutableStateOf(false) }
+    var viewingChordDiagram by remember { mutableStateOf<Chord?>(null) }
     var showPermissionDialog by remember { mutableStateOf(false) }
 
     // Counter pulse animation — fires on every new strum detected
@@ -185,7 +196,7 @@ fun CounterScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = "Chord Transitions",
@@ -193,7 +204,19 @@ fun CounterScreen(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // ── Selected Practice Chords Row ──
+                ChordProgressionBar(
+                    chords = uiState.selectedChords,
+                    isRunning = uiState.isRunning,
+                    onChordClick = { chordName ->
+                        viewingChordDiagram = viewModel.getChord(chordName)
+                    },
+                    onEditClick = { showChordSelectionSheet = true }
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
 
                 TimerRing(
                     progress = if (uiState.durationSeconds > 0)
@@ -215,12 +238,12 @@ fun CounterScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 if (!uiState.isFinished) {
                     if (uiState.isRunning) {
                         ListeningIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         OutlinedButton(
                             onClick = viewModel::onStop,
                             colors = ButtonDefaults.outlinedButtonColors(
@@ -243,7 +266,7 @@ fun CounterScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // ── Elegant Bottom Metronome Section ──
                 MetronomeBottomCard(
@@ -276,12 +299,31 @@ fun CounterScreen(
             ) {
                 FinishedOverlay(
                     count = uiState.transitionCount,
+                    chords = uiState.selectedChords,
                     isPersonalBest = uiState.isPersonalBest,
                     onTryAgain = { tryStart() },
                     onViewHistory = onNavigateToHistory
                 )
             }
         }
+    }
+
+    // Chord Selection Sheet
+    if (showChordSelectionSheet) {
+        ChordSelectionSheet(
+            selectedChords = uiState.selectedChords,
+            onChordsSelected = { viewModel.onChordsChange(it) },
+            onViewChordDiagram = { chord -> viewingChordDiagram = chord },
+            onDismiss = { showChordSelectionSheet = false }
+        )
+    }
+
+    // Chord Diagram Viewer
+    viewingChordDiagram?.let { chord ->
+        ChordDiagramSheet(
+            chord = chord,
+            onDismiss = { viewingChordDiagram = null }
+        )
     }
 
     // Settings sheet
@@ -316,6 +358,79 @@ fun CounterScreen(
                 TextButton(onClick = { showPermissionDialog = false }) { Text("OK") }
             }
         )
+    }
+}
+
+// ── Chord Progression Bar ───────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChordProgressionBar(
+    chords: List<String>,
+    isRunning: Boolean,
+    onChordClick: (String) -> Unit,
+    onEditClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                chords.forEachIndexed { index, chordName ->
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier
+                            .clickable { onChordClick(chordName) }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = chordName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    if (index < chords.size - 1) {
+                        Text(
+                            text = "➔",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            if (!isRunning) {
+                IconButton(onClick = onEditClick) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Chords",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -634,6 +749,7 @@ private fun TimerRing(
 @Composable
 private fun FinishedOverlay(
     count: Int,
+    chords: List<String>,
     isPersonalBest: Boolean,
     onTryAgain: () -> Unit,
     onViewHistory: () -> Unit
@@ -646,18 +762,46 @@ private fun FinishedOverlay(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.padding(32.dp)
         ) {
             Text("Time's up! 🎸", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Text("$count", fontSize = 96.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, lineHeight = 96.sp)
+
+            // Show chord progression
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                chords.forEachIndexed { index, chordName ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = chordName,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    if (index < chords.size - 1) {
+                        Text("➔", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
+                    }
+                }
+            }
+
+            Text("$count", fontSize = 88.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, lineHeight = 88.sp)
             Text("chord transitions", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+
             if (isPersonalBest) {
-                Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50), modifier = Modifier.padding(top = 4.dp)) {
+                Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50), modifier = Modifier.padding(top = 2.dp)) {
                     Text("🏆 Personal Best!", modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             Button(onClick = onTryAgain, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
                 Text("Try Again", fontWeight = FontWeight.Bold)
             }

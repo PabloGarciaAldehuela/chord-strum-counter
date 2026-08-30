@@ -30,7 +30,7 @@ class SessionRepositoryImpl @Inject constructor(
     private var countDownTimer: CountDownTimer? = null
     private var audioJob: Job? = null
 
-    override suspend fun startSession(durationSeconds: Int) {
+    override suspend fun startSession(durationSeconds: Int, chords: List<String>) {
         countDownTimer?.cancel()
         audioJob?.cancel()
 
@@ -42,7 +42,8 @@ class SessionRepositoryImpl @Inject constructor(
             transitionCount = 0,
             isRunning = true,
             isFinished = false,
-            remainingSeconds = durationSeconds
+            remainingSeconds = durationSeconds,
+            chords = if (chords.isEmpty()) listOf("A", "D") else chords
         )
 
         countDownTimer = object : CountDownTimer(durationSeconds * 1000L, 1000L) {
@@ -90,4 +91,7 @@ class SessionRepositoryImpl @Inject constructor(
 
     override suspend fun getPreferredDebounce(): Int = preferencesDataSource.getDebounce()
     override suspend fun savePreferredDebounce(ms: Int) = preferencesDataSource.saveDebounce(ms)
+
+    override suspend fun getPreferredChords(): List<String> = preferencesDataSource.getChords()
+    override suspend fun savePreferredChords(chords: List<String>) = preferencesDataSource.saveChords(chords)
 }

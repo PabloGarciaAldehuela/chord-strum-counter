@@ -5,5 +5,6 @@ data class Session(
     val transitionCount: Int = 0,
     val isRunning: Boolean = false,
     val isFinished: Boolean = false,
-    val remainingSeconds: Int = 60
+    val remainingSeconds: Int = 60,
+    val chords: List<String> = listOf("A", "D")
 )

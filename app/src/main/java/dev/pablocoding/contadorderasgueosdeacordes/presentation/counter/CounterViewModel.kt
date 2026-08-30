@@ -3,11 +3,14 @@ package dev.pablocoding.contadorderasgueosdeacordes.presentation.counter
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.pablocoding.contadorderasgueosdeacordes.domain.model.MetronomeState
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.ChordLibrary
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetChordLibraryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetMetronomeStateUseCase
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetSelectedChordsUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetSessionHistoryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.SaveSessionResultUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.StartSessionUseCase
@@ -16,6 +19,7 @@ import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.ToggleMetronom
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.UpdateDebounceUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.UpdateDurationUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.UpdateMetronomeBpmUseCase
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.UpdateSelectedChordsUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.UpdateSensitivityUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -38,7 +42,8 @@ data class CounterUiState(
     val isMetronomePlaying: Boolean = false,
     val metronomeBpm: Int = 80,
     val metronomeBeat: Int = 1,
-    val metronomeTempoName: String = "Andante"
+    val metronomeTempoName: String = "Andante",
+    val selectedChords: List<String> = listOf("A", "D")
 )
 
 @HiltViewModel
@@ -53,24 +58,29 @@ class CounterViewModel @Inject constructor(
     private val getSessionHistory: GetSessionHistoryUseCase,
     private val toggleMetronome: ToggleMetronomeUseCase,
     private val updateMetronomeBpm: UpdateMetronomeBpmUseCase,
+    private val getSelectedChords: GetSelectedChordsUseCase,
+    private val updateSelectedChords: UpdateSelectedChordsUseCase,
+    private val getChordLibrary: GetChordLibraryUseCase,
     getMetronomeState: GetMetronomeStateUseCase
 ) : ViewModel() {
 
     private val _durationSeconds = MutableStateFlow(60)
     private val _sensitivity     = MutableStateFlow(0.6f)
     private val _debounceMs      = MutableStateFlow(350)
+    private val _selectedChords  = MutableStateFlow(listOf("A", "D"))
     private val _isPersonalBest  = MutableStateFlow(false)
 
     private data class Settings(
         val duration: Int,
         val sensitivity: Float,
         val debounceMs: Int,
+        val selectedChords: List<String>,
         val isPersonalBest: Boolean
     )
 
     private val _settings = combine(
-        _durationSeconds, _sensitivity, _debounceMs, _isPersonalBest
-    ) { d, s, db, pb -> Settings(d, s, db, pb) }
+        _durationSeconds, _sensitivity, _debounceMs, _selectedChords, _isPersonalBest
+    ) { d, s, db, chords, pb -> Settings(d, s, db, chords, pb) }
 
     val uiState: StateFlow<CounterUiState> = combine(
         sessionRepository.sessionFlow,
@@ -89,7 +99,8 @@ class CounterViewModel @Inject constructor(
             isMetronomePlaying = metronome.isPlaying,
             metronomeBpm = metronome.bpm,
             metronomeBeat = metronome.currentBeat,
-            metronomeTempoName = metronome.tempoName
+            metronomeTempoName = metronome.tempoName,
+            selectedChords = if (session.isRunning || session.isFinished) session.chords else settings.selectedChords
         )
     }.stateIn(
         scope = viewModelScope,
@@ -102,6 +113,7 @@ class CounterViewModel @Inject constructor(
             _durationSeconds.value = sessionRepository.getPreferredDuration()
             _sensitivity.value     = sessionRepository.getPreferredSensitivity()
             _debounceMs.value      = sessionRepository.getPreferredDebounce()
+            _selectedChords.value  = getSelectedChords()
         }
         viewModelScope.launch {
             sessionRepository.sessionFlow.collect { session ->
@@ -113,7 +125,7 @@ class CounterViewModel @Inject constructor(
     fun onStart() {
         viewModelScope.launch {
             _isPersonalBest.value = false
-            startSession(_durationSeconds.value)
+            startSession(_durationSeconds.value, _selectedChords.value)
         }
     }
 
@@ -142,6 +154,14 @@ class CounterViewModel @Inject constructor(
         }
     }
 
+    fun onChordsChange(chords: List<String>) {
+        val valid = if (chords.isEmpty()) listOf("A", "D") else chords
+        viewModelScope.launch {
+            updateSelectedChords(valid)
+            _selectedChords.value = valid
+        }
+    }
+
     fun onToggleMetronome(enabled: Boolean? = null) {
         viewModelScope.launch {
             toggleMetronome(enabled)
@@ -159,17 +179,25 @@ class CounterViewModel @Inject constructor(
         onMetronomeBpmChange((current + delta).coerceIn(40, 240))
     }
 
+    fun getChord(name: String): Chord? = getChordLibrary.getChord(name)
+
     private suspend fun onSessionFinished(session: Session) {
         val result = SessionResult(
             timestamp = System.currentTimeMillis(),
             durationSeconds = session.durationSeconds,
-            transitionCount = session.transitionCount
+            transitionCount = session.transitionCount,
+            chords = session.chords
         )
         saveSessionResult(result)
 
+        // Motivation protection: Personal Best is computed per chord progression
+        val currentProgressionKey = session.chords.joinToString(",")
         val history = getSessionHistory().first()
         val best = history
-            .filter { it.durationSeconds == session.durationSeconds }
+            .filter {
+                it.durationSeconds == session.durationSeconds &&
+                it.chords.joinToString(",") == currentProgressionKey
+            }
             .maxOfOrNull { it.transitionCount } ?: 0
         _isPersonalBest.value = session.transitionCount >= best
     }
