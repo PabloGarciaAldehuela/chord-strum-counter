@@ -4,9 +4,11 @@ import app.cash.turbine.test
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.MetronomeState
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.UserPracticeStats
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetChordLibraryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetMetronomeStateUseCase
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetPracticeStatsUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetSelectedChordsUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetSessionHistoryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.SaveSessionResultUseCase
@@ -48,6 +50,7 @@ class CounterViewModelTest {
     private val updateDebounce: UpdateDebounceUseCase = mockk(relaxed = true)
     private val saveSessionResult: SaveSessionResultUseCase = mockk(relaxed = true)
     private val getSessionHistory: GetSessionHistoryUseCase = mockk(relaxed = true)
+    private val getPracticeStats: GetPracticeStatsUseCase = mockk(relaxed = true)
     private val toggleMetronome: ToggleMetronomeUseCase = mockk(relaxed = true)
     private val updateMetronomeBpm: UpdateMetronomeBpmUseCase = mockk(relaxed = true)
     private val getSelectedChords: GetSelectedChordsUseCase = mockk(relaxed = true)
@@ -67,6 +70,7 @@ class CounterViewModelTest {
         coEvery { getSelectedChords() } returns listOf("A", "D")
         every { getMetronomeState() } returns metronomeStateFlow
         every { getSessionHistory() } returns flowOf(emptyList())
+        every { getPracticeStats(any(), any()) } returns flowOf(UserPracticeStats(totalStrums = 120L, currentStreakDays = 2))
     }
 
     private fun createViewModel() = CounterViewModel(
@@ -78,6 +82,7 @@ class CounterViewModelTest {
         updateDebounce = updateDebounce,
         saveSessionResult = saveSessionResult,
         getSessionHistory = getSessionHistory,
+        getPracticeStats = getPracticeStats,
         toggleMetronome = toggleMetronome,
         updateMetronomeBpm = updateMetronomeBpm,
         getSelectedChords = getSelectedChords,
@@ -87,7 +92,7 @@ class CounterViewModelTest {
     )
 
     @Test
-    fun `initial uiState combines repository preferences and metronome state`() = runTest {
+    fun `initial uiState combines repository preferences, metronome state and stats`() = runTest {
         val viewModel = createViewModel()
 
         viewModel.uiState.test {
@@ -98,6 +103,8 @@ class CounterViewModelTest {
             assertEquals(80, state.metronomeBpm)
             assertEquals(false, state.isMetronomePlaying)
             assertEquals(listOf("A", "D"), state.selectedChords)
+            assertEquals(120L, state.lifetimeStrums)
+            assertEquals(2, state.currentStreakDays)
         }
     }
 
@@ -208,8 +215,6 @@ class CounterViewModelTest {
         viewModel.uiState.test {
             awaitItem()
 
-            // Session for 3 chords (A, D, E) with 35 transitions.
-            // Even though 35 < 55 (the score for A,D), 35 > 30 (the PB for A,D,E), so it SHOULD be a Personal Best!
             sessionFlow.value = Session(
                 durationSeconds = 60,
                 transitionCount = 35,

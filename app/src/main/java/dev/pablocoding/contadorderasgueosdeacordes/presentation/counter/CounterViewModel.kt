@@ -9,6 +9,7 @@ import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetChordLibraryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetMetronomeStateUseCase
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetPracticeStatsUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetSelectedChordsUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetSessionHistoryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.SaveSessionResultUseCase
@@ -42,7 +43,9 @@ data class CounterUiState(
     val metronomeBpm: Int = 80,
     val metronomeBeat: Int = 1,
     val metronomeTempoName: String = "Andante",
-    val selectedChords: List<String> = listOf("A", "D")
+    val selectedChords: List<String> = listOf("A", "D"),
+    val lifetimeStrums: Long = 0,
+    val currentStreakDays: Int = 0
 )
 
 @HiltViewModel
@@ -55,6 +58,7 @@ class CounterViewModel @Inject constructor(
     private val updateDebounce: UpdateDebounceUseCase,
     private val saveSessionResult: SaveSessionResultUseCase,
     private val getSessionHistory: GetSessionHistoryUseCase,
+    private val getPracticeStats: GetPracticeStatsUseCase,
     private val toggleMetronome: ToggleMetronomeUseCase,
     private val updateMetronomeBpm: UpdateMetronomeBpmUseCase,
     private val getSelectedChords: GetSelectedChordsUseCase,
@@ -84,8 +88,9 @@ class CounterViewModel @Inject constructor(
     val uiState: StateFlow<CounterUiState> = combine(
         sessionRepository.sessionFlow,
         _settings,
-        getMetronomeState()
-    ) { session, settings, metronome ->
+        getMetronomeState(),
+        getPracticeStats()
+    ) { session, settings, metronome, stats ->
         CounterUiState(
             transitionCount = session.transitionCount,
             remainingSeconds = session.remainingSeconds,
@@ -99,7 +104,9 @@ class CounterViewModel @Inject constructor(
             metronomeBpm = metronome.bpm,
             metronomeBeat = metronome.currentBeat,
             metronomeTempoName = metronome.tempoName,
-            selectedChords = if (session.isRunning || session.isFinished) session.chords else settings.selectedChords
+            selectedChords = if (session.isRunning || session.isFinished) session.chords else settings.selectedChords,
+            lifetimeStrums = stats.totalStrums,
+            currentStreakDays = stats.currentStreakDays
         )
     }.stateIn(
         scope = viewModelScope,

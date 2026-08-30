@@ -1,5 +1,6 @@
 package dev.pablocoding.contadorderasgueosdeacordes.presentation.history
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,7 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.ChordPracticeCount
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.UserPracticeStats
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,7 +62,7 @@ fun HistoryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Session History",
+                        "Session History & Stats",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -88,24 +93,38 @@ fun HistoryScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // Stats bar
-                StatsBar(
-                    stats = uiState.stats,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                )
-
-                // Session list
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // ── Primary Stats Dashboard ──
+                    item(key = "stats_dashboard") {
+                        StatsDashboard(stats = uiState.stats)
+                    }
+
+                    // ── Practiced Chords Repertoire ──
+                    if (uiState.stats.mostPracticedChords.isNotEmpty()) {
+                        item(key = "chord_repertoire") {
+                            PracticedChordsSection(chords = uiState.stats.mostPracticedChords)
+                        }
+                    }
+
+                    item(key = "history_header") {
+                        Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Recent Sessions (${uiState.sessions.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    }
+
+                    // ── Session List ──
                     items(
                         items = uiState.sessions,
                         key = { it.id }
@@ -121,41 +140,205 @@ fun HistoryScreen(
     }
 }
 
+// ── Rich Stats Dashboard ───────────────────────────────────────────────────
+
 @Composable
-private fun StatsBar(stats: HistoryStats, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+private fun StatsDashboard(stats: UserPracticeStats, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        StatItem(emoji = "🏆", label = "Best", value = "${stats.bestCount}")
-        StatItem(emoji = "📊", label = "Average", value = "${stats.averageCount.roundToInt()}")
-        StatItem(emoji = "🎸", label = "Sessions", value = "${stats.totalSessions}")
+        // Hero 2x2 Grid Cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            HeroStatCard(
+                icon = "🎸",
+                title = "Total Strums",
+                value = formatNumber(stats.totalStrums),
+                subtitle = "Lifetime Strums",
+                modifier = Modifier.weight(1f)
+            )
+            HeroStatCard(
+                icon = "⏱",
+                title = "Practice Time",
+                value = formatTotalTime(stats.totalPracticeSeconds),
+                subtitle = "${stats.totalSessions} sessions",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            HeroStatCard(
+                icon = "🔥",
+                title = "Daily Streak",
+                value = "${stats.currentStreakDays} ${if (stats.currentStreakDays == 1) "day" else "days"}",
+                subtitle = "Best: ${stats.longestStreakDays} days",
+                modifier = Modifier.weight(1f)
+            )
+            HeroStatCard(
+                icon = "⚡",
+                title = "Average Speed",
+                value = if (stats.averageSpeedSpm > 0) "${stats.averageSpeedSpm.roundToInt()} SPM" else "—",
+                subtitle = if (stats.peakSpeedSpm > 0) "Peak: ${stats.peakSpeedSpm.roundToInt()} SPM" else "Strums / Min",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Secondary Metrics Bar
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SecondaryStatItem(label = "🏆 Best Session", value = "${stats.bestSessionCount} trans")
+                SecondaryStatItem(label = "📊 Avg / Session", value = "${stats.averageTransitionsPerSession.roundToInt()} trans")
+                SecondaryStatItem(label = "🎶 Chords Mastered", value = "${stats.uniqueChordsCount} chords")
+            }
+        }
     }
 }
 
 @Composable
-private fun StatItem(emoji: String, label: String, value: String) {
+private fun HeroStatCard(
+    icon: String,
+    title: String,
+    value: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(text = icon, fontSize = 16.sp)
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SecondaryStatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = emoji, fontSize = 24.sp)
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.ExtraBold,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
 }
+
+// ── Practiced Chords Repertoire Section ─────────────────────────────────────
+
+@Composable
+private fun PracticedChordsSection(chords: List<ChordPracticeCount>) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = "Most Practiced Chords",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            chords.forEach { item ->
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = item.chordName,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "·",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                        Text(
+                            text = "${item.count}x",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Session Card ───────────────────────────────────────────────────────────
 
 @Composable
 private fun SessionCard(session: SessionResult, isBest: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isBest)
                 MaterialTheme.colorScheme.primaryContainer
@@ -265,7 +448,7 @@ private fun EmptyHistoryContent(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Complete your first practice session\nto see your history here.",
+                text = "Complete your first practice session\nto see your stats and personal bests here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
@@ -273,6 +456,8 @@ private fun EmptyHistoryContent(modifier: Modifier = Modifier) {
         }
     }
 }
+
+// ── Formatters ─────────────────────────────────────────────────────────────
 
 private fun formatTimestamp(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
@@ -283,4 +468,19 @@ private fun formatDuration(seconds: Int): String = when {
     seconds < 60 -> "${seconds}s"
     seconds % 60 == 0 -> "${seconds / 60} min"
     else -> "${seconds / 60}m ${seconds % 60}s"
+}
+
+private fun formatTotalTime(totalSeconds: Long): String = when {
+    totalSeconds == 0L -> "0 min"
+    totalSeconds < 60L -> "${totalSeconds}s"
+    totalSeconds < 3600L -> "${totalSeconds / 60L} min"
+    else -> {
+        val hours = totalSeconds / 3600L
+        val minutes = (totalSeconds % 3600L) / 60L
+        if (minutes > 0) "${hours}h ${minutes}m" else "${hours}h"
+    }
+}
+
+private fun formatNumber(number: Long): String {
+    return NumberFormat.getNumberInstance(Locale.getDefault()).format(number)
 }
