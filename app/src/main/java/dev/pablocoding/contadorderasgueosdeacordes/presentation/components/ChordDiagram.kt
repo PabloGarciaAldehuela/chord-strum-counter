@@ -89,10 +89,10 @@ private fun DrawScope.drawGuitarFretboard(
     val numStrings = 6
     val numFrets = 4
 
-    val topPadding = 28f
-    val bottomPadding = 18f
-    val leftPadding = 20f
-    val rightPadding = 20f
+    val topPadding = 28.dp.toPx()
+    val bottomPadding = 18.dp.toPx()
+    val leftPadding = 20.dp.toPx()
+    val rightPadding = 20.dp.toPx()
 
     val gridWidth = size.width - leftPadding - rightPadding
     val gridHeight = size.height - topPadding - bottomPadding
@@ -105,16 +105,16 @@ private fun DrawScope.drawGuitarFretboard(
     if (isNut) {
         drawLine(
             color = nutColor,
-            start = Offset(leftPadding - 2f, topPadding),
-            end = Offset(size.width - rightPadding + 2f, topPadding),
-            strokeWidth = 6f
+            start = Offset(leftPadding - 2.dp.toPx(), topPadding),
+            end = Offset(size.width - rightPadding + 2.dp.toPx(), topPadding),
+            strokeWidth = 3.5.dp.toPx()
         )
     } else {
         drawLine(
             color = nutColor.copy(alpha = 0.5f),
             start = Offset(leftPadding, topPadding),
             end = Offset(size.width - rightPadding, topPadding),
-            strokeWidth = 2f
+            strokeWidth = 1.5.dp.toPx()
         )
     }
 
@@ -125,14 +125,14 @@ private fun DrawScope.drawGuitarFretboard(
             color = stringColor.copy(alpha = 0.4f),
             start = Offset(leftPadding, y),
             end = Offset(size.width - rightPadding, y),
-            strokeWidth = 2f
+            strokeWidth = 1.2.dp.toPx()
         )
     }
 
     // 3. Draw Strings (vertical) - varying gauges from 6th (thick) to 1st (thin)
     for (s in 0 until numStrings) {
         val x = leftPadding + (s * stringSpacing)
-        val strokeWidth = 1.2f + (5 - s) * 0.7f // String 6 is thicker than String 1
+        val strokeWidth = (0.8f + (5 - s) * 0.4f).dp.toPx()
 
         drawLine(
             color = stringColor,
@@ -143,8 +143,13 @@ private fun DrawScope.drawGuitarFretboard(
     }
 
     // 4. Draw Open / Muted string markers and Finger Dots
+    val markerTextSize = 13.sp.toPx()
+    val labelTextSize = 11.sp.toPx()
+    val dotRadius = 9.dp.toPx()
+    val openCircleRadius = 4.dp.toPx()
+
     val paint = android.graphics.Paint().apply {
-        textSize = 24f
+        textSize = markerTextSize
         textAlign = android.graphics.Paint.Align.CENTER
         isAntiAlias = true
         typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -152,7 +157,7 @@ private fun DrawScope.drawGuitarFretboard(
 
     val stringLabelPaint = android.graphics.Paint().apply {
         color = labelArgb
-        textSize = 20f
+        textSize = labelTextSize
         textAlign = android.graphics.Paint.Align.CENTER
         isAntiAlias = true
     }
@@ -169,15 +174,15 @@ private fun DrawScope.drawGuitarFretboard(
             -1 -> {
                 // Muted string 'X'
                 paint.color = errorArgb
-                drawContext.canvas.nativeCanvas.drawText("✕", x, topPadding - 10f, paint)
+                drawContext.canvas.nativeCanvas.drawText("✕", x, topPadding - 8.dp.toPx(), paint)
             }
             0 -> {
                 // Open string 'O'
                 drawCircle(
                     color = primaryColor,
-                    radius = 5.5f,
-                    center = Offset(x, topPadding - 12f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f)
+                    radius = openCircleRadius,
+                    center = Offset(x, topPadding - 9.dp.toPx()),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8.dp.toPx())
                 )
             }
             else -> {
@@ -185,7 +190,6 @@ private fun DrawScope.drawGuitarFretboard(
                 val relFret = fret - chord.baseFret + 1
                 if (relFret in 1..numFrets) {
                     val dotY = topPadding + ((relFret - 0.5f) * fretSpacing)
-                    val dotRadius = 14f
 
                     drawCircle(
                         color = primaryColor,
@@ -198,7 +202,7 @@ private fun DrawScope.drawGuitarFretboard(
                         drawContext.canvas.nativeCanvas.drawText(
                             "$finger",
                             x,
-                            dotY + 8f,
+                            dotY + 4.5.dp.toPx(),
                             paint
                         )
                     }
@@ -210,7 +214,7 @@ private fun DrawScope.drawGuitarFretboard(
         drawContext.canvas.nativeCanvas.drawText(
             stringNames[s],
             x,
-            topPadding + gridHeight + 20f,
+            topPadding + gridHeight + 14.dp.toPx(),
             stringLabelPaint
         )
     }

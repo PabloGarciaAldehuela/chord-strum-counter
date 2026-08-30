@@ -175,7 +175,8 @@ fun ChordSelectionSheet(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Confirm Selection (${currentSelection.size} Chords)", fontWeight = FontWeight.Bold)
+                val chordLabel = if (currentSelection.size == 1) "Chord" else "Chords"
+                Text("Confirm Selection (${currentSelection.size} $chordLabel)", fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
