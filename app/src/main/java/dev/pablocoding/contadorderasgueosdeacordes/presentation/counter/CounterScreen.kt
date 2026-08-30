@@ -811,7 +811,7 @@ private fun ListeningIndicator() {
     }
 }
 
-// ── Timer ring (Material 3 Expressive Acoustic Wavy Rosette) ──────────────────────
+// ── Timer ring (Material 3 Precision Rosette with Fluid Sweeping Bead) ────────
 
 @Composable
 private fun TimerRing(
@@ -822,19 +822,10 @@ private fun TimerRing(
     isRunning: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "wavy_timer")
-    val wavePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave_phase"
-    )
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.14f,
-        targetValue = 0.32f,
+    val infiniteGlow = rememberInfiniteTransition(label = "ring_glow")
+    val glowAlpha by infiniteGlow.animateFloat(
+        initialValue = 0.12f,
+        targetValue = 0.28f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -857,9 +848,12 @@ private fun TimerRing(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            val strokeWidthPx = 11.dp.toPx()
+            val strokeWidthPx = 12.dp.toPx()
+            val innerPadding = strokeWidthPx / 2
+            val arcSize = Size(size.width - strokeWidthPx, size.height - strokeWidthPx)
+            val arcTopLeft = Offset(innerPadding, innerPadding)
             val centerOffset = Offset(size.width / 2, size.height / 2)
-            val radius = (size.width - strokeWidthPx - 10.dp.toPx()) / 2
+            val radius = (size.width - strokeWidthPx) / 2
             val innerInlayRadius = radius - 14.dp.toPx()
             val soundholeRadius = innerInlayRadius - 8.dp.toPx()
 
@@ -879,7 +873,15 @@ private fun TimerRing(
                 )
             }
 
-            // 2. Inner Rosette Inlay Dashed Ring (from Luthier's Resonance design)
+            // 2. Background Track (clean continuous circular ring)
+            drawCircle(
+                color = trackColor,
+                radius = radius,
+                center = centerOffset,
+                style = Stroke(width = strokeWidthPx)
+            )
+
+            // 3. Inner Rosette Inlay Dashed Ring (from Luthier's Resonance design)
             if (innerInlayRadius > 0) {
                 drawCircle(
                     color = inlayColor,
@@ -892,84 +894,58 @@ private fun TimerRing(
                 )
             }
 
-            // 3. Wavy Acoustic Tracks (Material 3 Expressive CircularWavyProgressIndicator)
-            val numPoints = 240
-            val waveFrequency = 14f // 14 gentle harmonic waves around the ring
-            val waveAmplitude = if (isRunning) 3.5.dp.toPx() else 0f
-
-            // Full background wavy circle path
-            val bgPath = Path()
-            for (i in 0..numPoints) {
-                val angleDeg = -90f + (i.toFloat() / numPoints.toFloat()) * 360f
-                val angleRad = Math.toRadians(angleDeg.toDouble())
-                val waveOffset = waveAmplitude * kotlin.math.sin(waveFrequency * angleRad + wavePhase).toFloat()
-                val r = radius + waveOffset
-                val x = (centerOffset.x + r * kotlin.math.cos(angleRad)).toFloat()
-                val y = (centerOffset.y + r * kotlin.math.sin(angleRad)).toFloat()
-                if (i == 0) bgPath.moveTo(x, y) else bgPath.lineTo(x, y)
-            }
-            bgPath.close()
-
-            // Draw Background Track
-            drawPath(
-                path = bgPath,
-                color = trackColor,
-                style = Stroke(width = strokeWidthPx)
-            )
-
             // 4. Ambient Strum Glow Aura (pulsing when active)
             if (isRunning) {
-                drawPath(
-                    path = bgPath,
+                drawCircle(
                     color = glowColor.copy(alpha = glowAlpha),
-                    style = Stroke(width = strokeWidthPx + 6.dp.toPx())
+                    radius = radius + (strokeWidthPx / 2) + 2.dp.toPx(),
+                    center = centerOffset,
+                    style = Stroke(width = 4.dp.toPx())
                 )
             }
 
             // 5. Active Countdown Progress Arc with Leading Indicator Bead
             if (isRunning && progress > 0f) {
                 val clampedProgress = progress.coerceIn(0f, 1f)
-                val sweepPoints = (clampedProgress * numPoints).toInt().coerceAtLeast(2)
-                val progressPath = Path()
-                var beadX = centerOffset.x
-                var beadY = centerOffset.y
+                val sweep = clampedProgress * 360f
 
-                for (i in 0..sweepPoints) {
-                    val angleDeg = -90f + (i.toFloat() / numPoints.toFloat()) * 360f
-                    val angleRad = Math.toRadians(angleDeg.toDouble())
-                    val waveOffset = waveAmplitude * kotlin.math.sin(waveFrequency * angleRad + wavePhase).toFloat()
-                    val r = radius + waveOffset
-                    val x = (centerOffset.x + r * kotlin.math.cos(angleRad)).toFloat()
-                    val y = (centerOffset.y + r * kotlin.math.sin(angleRad)).toFloat()
-                    if (i == 0) {
-                        progressPath.moveTo(x, y)
-                    } else {
-                        progressPath.lineTo(x, y)
-                    }
-                    if (i == sweepPoints) {
-                        beadX = x
-                        beadY = y
-                    }
+                if (sweep >= 359.5f) {
+                    drawCircle(
+                        color = progressColor,
+                        radius = radius,
+                        center = centerOffset,
+                        style = Stroke(width = strokeWidthPx)
+                    )
+                } else {
+                    drawArc(
+                        color = progressColor,
+                        startAngle = -90f,
+                        sweepAngle = sweep,
+                        useCenter = false,
+                        topLeft = arcTopLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                    )
+
+                    // Calculate position of the leading bead at the arc's head
+                    val angleRad = Math.toRadians((-90.0 + sweep))
+                    val beadX = (centerOffset.x + radius * Math.cos(angleRad)).toFloat()
+                    val beadY = (centerOffset.y + radius * Math.sin(angleRad)).toFloat()
+                    val beadCenter = Offset(beadX, beadY)
+
+                    // Outer bead glow
+                    drawCircle(
+                        color = glowColor.copy(alpha = 0.5f),
+                        radius = 8.dp.toPx(),
+                        center = beadCenter
+                    )
+                    // Inner solid bead
+                    drawCircle(
+                        color = beadCoreColor,
+                        radius = 4.5.dp.toPx(),
+                        center = beadCenter
+                    )
                 }
-
-                drawPath(
-                    path = progressPath,
-                    color = progressColor,
-                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-                )
-
-                // Leading glowing bead on the wave crest
-                val beadCenter = Offset(beadX, beadY)
-                drawCircle(
-                    color = glowColor.copy(alpha = 0.6f),
-                    radius = 8.5.dp.toPx(),
-                    center = beadCenter
-                )
-                drawCircle(
-                    color = beadCoreColor,
-                    radius = 4.5.dp.toPx(),
-                    center = beadCenter
-                )
             }
         }
 
