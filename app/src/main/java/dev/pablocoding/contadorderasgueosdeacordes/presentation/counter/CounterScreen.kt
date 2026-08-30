@@ -296,6 +296,8 @@ fun CounterScreen(
                     count = uiState.transitionCount,
                     chords = uiState.selectedChords,
                     isPersonalBest = uiState.isPersonalBest,
+                    lifetimeStrums = uiState.lifetimeStrums,
+                    currentStreakDays = uiState.currentStreakDays,
                     onTryAgain = { tryStart() },
                     onViewHistory = onNavigateToHistory
                 )
@@ -745,6 +747,8 @@ private fun FinishedOverlay(
     count: Int,
     chords: List<String>,
     isPersonalBest: Boolean,
+    lifetimeStrums: Long,
+    currentStreakDays: Int,
     onTryAgain: () -> Unit,
     onViewHistory: () -> Unit
 ) {
@@ -791,6 +795,40 @@ private fun FinishedOverlay(
             if (isPersonalBest) {
                 Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50), modifier = Modifier.padding(top = 2.dp)) {
                     Text("🏆 Personal Best!", modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Lifetime Stats & Streak Milestone Badge
+            if (lifetimeStrums > 0) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🎸 Total: %,d strums".format(lifetimeStrums),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (currentStreakDays > 0) {
+                            Text(
+                                text = "·",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                            Text(
+                                text = "🔥 %d %s streak".format(currentStreakDays, if (currentStreakDays == 1) "day" else "days"),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
 
