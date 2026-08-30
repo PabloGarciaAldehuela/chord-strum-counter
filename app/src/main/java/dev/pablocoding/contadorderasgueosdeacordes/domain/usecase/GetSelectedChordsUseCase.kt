@@ -3,10 +3,8 @@ package dev.pablocoding.contadorderasgueosdeacordes.domain.usecase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
 import javax.inject.Inject
 
-class StartSessionUseCase @Inject constructor(
+class GetSelectedChordsUseCase @Inject constructor(
     private val repository: SessionRepository
 ) {
-    suspend operator fun invoke(durationSeconds: Int, chords: List<String> = listOf("A", "D")) {
-        repository.startSession(durationSeconds, chords)
-    }
+    suspend operator fun invoke(): List<String> = repository.getPreferredChords()
 }

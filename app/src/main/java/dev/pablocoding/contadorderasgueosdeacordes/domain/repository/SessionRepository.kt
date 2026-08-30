@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface SessionRepository {
     val sessionFlow: Flow<Session>
-    suspend fun startSession(durationSeconds: Int)
+    suspend fun startSession(durationSeconds: Int, chords: List<String> = listOf("A", "D"))
     suspend fun stopSession()
     suspend fun registerTransition()
     suspend fun getPreferredDuration(): Int
@@ -14,4 +14,6 @@ interface SessionRepository {
     suspend fun savePreferredSensitivity(value: Float)
     suspend fun getPreferredDebounce(): Int
     suspend fun savePreferredDebounce(ms: Int)
+    suspend fun getPreferredChords(): List<String>
+    suspend fun savePreferredChords(chords: List<String>)
 }
