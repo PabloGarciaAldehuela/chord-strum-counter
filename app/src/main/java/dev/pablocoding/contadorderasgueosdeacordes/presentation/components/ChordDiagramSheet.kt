@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +29,8 @@ fun ChordDiagramSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
             modifier = Modifier
@@ -42,12 +44,15 @@ fun ChordDiagramSheet(
 
             Button(
                 onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(0.5f)
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(48.dp),
+                shape = RoundedCornerShape(50)
             ) {
-                Text("Close")
+                Text("Close", style = MaterialTheme.typography.titleSmall)
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
         }
     }
 }

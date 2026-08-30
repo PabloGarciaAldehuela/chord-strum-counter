@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
+import dev.pablocoding.contadorderasgueosdeacordes.ui.theme.IvoryBone
+import dev.pablocoding.contadorderasgueosdeacordes.ui.theme.PhosphorBronze
 
 @Composable
 fun ChordDiagram(
@@ -31,26 +33,29 @@ fun ChordDiagram(
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val fretboardColor = MaterialTheme.colorScheme.surfaceVariant
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
     val onPrimaryArgb = MaterialTheme.colorScheme.onPrimary.toArgb()
     val errorArgb = MaterialTheme.colorScheme.error.toArgb()
-    val labelArgb = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f).toArgb()
+    val labelArgb = onSurfaceVariantColor.toArgb()
 
     Column(
         modifier = modifier
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = chord.name,
-            fontSize = 32.sp,
+            fontSize = 34.sp,
             fontWeight = FontWeight.ExtraBold,
             color = primaryColor
         )
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = chord.fullName,
             style = MaterialTheme.typography.bodyMedium,
-            color = onSurfaceColor.copy(alpha = 0.7f)
+            color = onSurfaceVariantColor
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -58,16 +63,17 @@ fun ChordDiagram(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(width = 220.dp, height = 240.dp)
-                .background(fretboardColor.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                .size(width = 240.dp, height = 250.dp)
+                .background(surfaceColor, RoundedCornerShape(16.dp))
                 .padding(12.dp)
         ) {
-            Canvas(modifier = Modifier.size(width = 180.dp, height = 200.dp)) {
+            Canvas(modifier = Modifier.size(width = 200.dp, height = 210.dp)) {
                 drawGuitarFretboard(
                     chord = chord,
                     primaryColor = primaryColor,
-                    stringColor = onSurfaceColor.copy(alpha = 0.6f),
-                    nutColor = onSurfaceColor,
+                    stringColor = PhosphorBronze,
+                    nutColor = IvoryBone,
+                    fretColor = PhosphorBronze.copy(alpha = 0.5f),
                     onPrimaryArgb = onPrimaryArgb,
                     errorArgb = errorArgb,
                     labelArgb = labelArgb
@@ -82,6 +88,7 @@ private fun DrawScope.drawGuitarFretboard(
     primaryColor: Color,
     stringColor: Color,
     nutColor: Color,
+    fretColor: Color,
     onPrimaryArgb: Int,
     errorArgb: Int,
     labelArgb: Int
@@ -122,10 +129,10 @@ private fun DrawScope.drawGuitarFretboard(
     for (f in 1..numFrets) {
         val y = topPadding + (f * fretSpacing)
         drawLine(
-            color = stringColor.copy(alpha = 0.4f),
+            color = fretColor,
             start = Offset(leftPadding, y),
             end = Offset(size.width - rightPadding, y),
-            strokeWidth = 1.2.dp.toPx()
+            strokeWidth = 1.5.dp.toPx()
         )
     }
 

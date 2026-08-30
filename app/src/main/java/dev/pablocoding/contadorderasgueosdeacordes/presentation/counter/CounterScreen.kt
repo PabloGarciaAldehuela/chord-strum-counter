@@ -158,7 +158,15 @@ fun CounterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.background)
+                .background(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.background
+                        ),
+                        radius = 1200f
+                    )
+                )
         ) {
             Column(
                 modifier = Modifier
@@ -166,40 +174,58 @@ fun CounterScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top bar
+                // Top Action Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onNavigateToHistory) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = "View History",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    if (!uiState.isRunning && !uiState.isFinished) {
-                        IconButton(onClick = { showSettingsSheet = true }) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        IconButton(onClick = onNavigateToHistory) {
                             Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = MaterialTheme.colorScheme.onBackground
+                                imageVector = Icons.Default.History,
+                                contentDescription = "View History",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
+
+                    Text(
+                        text = "Chord Transitions",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (!uiState.isRunning && !uiState.isFinished) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            IconButton(onClick = { showSettingsSheet = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Settings",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.size(44.dp))
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Chord Transitions",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // ── Selected Practice Chords Row ──
                 ChordProgressionBar(
@@ -223,14 +249,30 @@ fun CounterScreen(
                     isRunning = uiState.isRunning
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 if (!uiState.isRunning && !uiState.isFinished) {
-                    Text(
-                        text = "Duration: ${formatDuration(uiState.durationSeconds)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "⏱",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(
+                                text = "Duration: ${formatDuration(uiState.durationSeconds)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -238,25 +280,34 @@ fun CounterScreen(
                 if (!uiState.isFinished) {
                     if (uiState.isRunning) {
                         ListeningIndicator()
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         OutlinedButton(
                             onClick = viewModel::onStop,
+                            modifier = Modifier
+                                .height(50.dp)
+                                .fillMaxWidth(0.65f),
+                            shape = RoundedCornerShape(50),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.error),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
                             )
-                        ) { Text("Stop") }
+                        ) {
+                            Text("STOP SESSION", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        }
                     } else {
                         Button(
                             onClick = { tryStart() },
                             modifier = Modifier
-                                .height(52.dp)
-                                .fillMaxWidth(0.65f),
+                                .height(54.dp)
+                                .fillMaxWidth(0.72f),
+                            shape = RoundedCornerShape(50),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 1.dp)
                         ) {
-                            Text("Start", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("START PRACTICE 🎸", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
                         }
                     }
                 }
@@ -283,7 +334,7 @@ fun CounterScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
             // Finished overlay
@@ -370,28 +421,31 @@ private fun ChordProgressionBar(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f, fill = false)
             ) {
                 chords.forEachIndexed { index, chordName ->
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(50),
                         color = MaterialTheme.colorScheme.primaryContainer,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                         modifier = Modifier
                             .clickable { onChordClick(chordName) }
                             .padding(vertical = 2.dp)
@@ -399,9 +453,10 @@ private fun ChordProgressionBar(
                         Text(
                             text = chordName,
                             style = MaterialTheme.typography.titleMedium,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                         )
                     }
 
@@ -409,7 +464,7 @@ private fun ChordProgressionBar(
                         Text(
                             text = "➔",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -446,20 +501,18 @@ private fun MetronomeBottomCard(
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPlaying)
-                MaterialTheme.colorScheme.surfaceVariant
-            else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isPlaying) 4.dp else 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPlaying) 4.dp else 2.dp),
         modifier = modifier
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(18.dp)
         ) {
             // Header Row: Icon + Title/Tempo + Switch
             Row(
@@ -474,16 +527,17 @@ private fun MetronomeBottomCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Surface(
-                        shape = CircleShape,
-                        color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.size(38.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                        modifier = Modifier.size(42.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.GraphicEq,
                                 contentDescription = "Metronome",
-                                tint = if (isPlaying) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                                tint = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
@@ -497,8 +551,8 @@ private fun MetronomeBottomCard(
                         )
                         Text(
                             text = "$bpm BPM · $tempoName",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -509,8 +563,8 @@ private fun MetronomeBottomCard(
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary,
-                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                        uncheckedTrackColor = MaterialTheme.colorScheme.surface
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
             }
@@ -534,21 +588,25 @@ private fun MetronomeBottomCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        FilledTonalIconButton(
+                        FilledTonalButton(
                             onClick = { onBpmStep(-5) },
-                            modifier = Modifier.size(36.dp),
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("-5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                         }
 
                         FilledTonalIconButton(
                             onClick = { onBpmStep(-1) },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(38.dp),
+                            shape = CircleShape,
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surface
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
                             )
                         ) {
                             Icon(Icons.Default.Remove, contentDescription = "Decrease 1 BPM", modifier = Modifier.size(16.dp))
@@ -556,33 +614,38 @@ private fun MetronomeBottomCard(
 
                         Text(
                             text = "$bpm",
-                            style = MaterialTheme.typography.headlineSmall,
+                            fontSize = 30.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
                         )
 
                         FilledTonalIconButton(
                             onClick = { onBpmStep(1) },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(38.dp),
+                            shape = CircleShape,
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surface
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
                             )
                         ) {
                             Icon(Icons.Default.Add, contentDescription = "Increase 1 BPM", modifier = Modifier.size(16.dp))
                         }
 
-                        FilledTonalIconButton(
+                        FilledTonalButton(
                             onClick = { onBpmStep(5) },
-                            modifier = Modifier.size(36.dp),
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("+5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Slider
                     Slider(
@@ -591,7 +654,8 @@ private fun MetronomeBottomCard(
                         valueRange = 40f..240f,
                         colors = SliderDefaults.colors(
                             thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     )
 
@@ -599,8 +663,8 @@ private fun MetronomeBottomCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("40 (Largo)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-                        Text("240 (Presto)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        Text("40 (Largo)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("240 (Presto)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -615,39 +679,50 @@ private fun BeatVisualizer(
     currentBeat: Int,
     beatsPerMeasure: Int = 4
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
     ) {
-        for (i in 1..beatsPerMeasure) {
-            val isActive = (i == currentBeat)
-            val isAccent = (i == 1)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (i in 1..beatsPerMeasure) {
+                val isActive = (i == currentBeat)
+                val isAccent = (i == 1)
 
-            val animatedScale by animateFloatAsState(
-                targetValue = if (isActive) (if (isAccent) 1.45f else 1.25f) else 1.0f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-                label = "beat_dot_scale_$i"
-            )
+                val animatedScale by animateFloatAsState(
+                    targetValue = if (isActive) (if (isAccent) 1.45f else 1.25f) else 1.0f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+                    label = "beat_dot_scale_$i"
+                )
 
-            val dotColor by animateColorAsState(
-                targetValue = when {
-                    isActive && isAccent -> MaterialTheme.colorScheme.primary
-                    isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-                    else -> MaterialTheme.colorScheme.surface
-                },
-                animationSpec = tween(100),
-                label = "beat_dot_color_$i"
-            )
+                val dotColor by animateColorAsState(
+                    targetValue = when {
+                        isActive && isAccent -> MaterialTheme.colorScheme.primary
+                        isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                        else -> MaterialTheme.colorScheme.outlineVariant
+                    },
+                    animationSpec = tween(100),
+                    label = "beat_dot_color_$i"
+                )
 
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .size(if (isAccent) 14.dp else 11.dp)
-                    .scale(animatedScale)
-                    .clip(CircleShape)
-                    .background(dotColor)
-            )
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .size(if (isAccent) 14.dp else 11.dp)
+                        .scale(animatedScale)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
+            }
         }
     }
 }
@@ -658,7 +733,7 @@ private fun BeatVisualizer(
 private fun ListeningIndicator() {
     val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
     val micScale by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
+        initialValue = 0.88f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
             animation = tween(700),
@@ -704,20 +779,20 @@ private fun TimerRing(
     )
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.size(220.dp)
+        modifier = modifier.size(240.dp)
     ) {
         CircularProgressIndicator(
             progress = { 1f },
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.surfaceVariant,
-            strokeWidth = 10.dp
+            strokeWidth = 12.dp
         )
         CircularProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier.fillMaxSize(),
             color = if (isRunning) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-            strokeWidth = 10.dp
+            strokeWidth = 14.dp
         )
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -725,15 +800,17 @@ private fun TimerRing(
         ) {
             Text(
                 text = "$transitionCount",
-                fontSize = 68.sp,
+                fontSize = 76.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 68.sp
+                lineHeight = 76.sp
             )
             Text(
                 text = if (isRunning) formatTimeMMSS(remainingSeconds) else "transitions",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.labelMedium,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
@@ -763,7 +840,12 @@ private fun FinishedOverlay(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.padding(32.dp)
         ) {
-            Text("Time's up! 🎸", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(
+                text = "Time's up! 🎸",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
 
             // Show chord progression
             Row(
@@ -772,29 +854,56 @@ private fun FinishedOverlay(
             ) {
                 chords.forEachIndexed { index, chordName ->
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
                         Text(
                             text = chordName,
                             style = MaterialTheme.typography.labelLarge,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                         )
                     }
                     if (index < chords.size - 1) {
-                        Text("➔", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
+                        Text(
+                            text = "➔",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
 
-            Text("$count", fontSize = 88.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, lineHeight = 88.sp)
-            Text("chord transitions", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+            Text(
+                text = "$count",
+                fontSize = 88.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary,
+                lineHeight = 88.sp
+            )
+            Text(
+                text = "chord transitions",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             if (isPersonalBest) {
-                Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50), modifier = Modifier.padding(top = 2.dp)) {
-                    Text("🏆 Personal Best!", modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Surface(
+                    color = dev.pablocoding.contadorderasgueosdeacordes.ui.theme.VintageEmerald,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Text(
+                        text = "🏆 Personal Best!",
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -832,13 +941,32 @@ private fun FinishedOverlay(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Button(onClick = onTryAgain, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
-                Text("Try Again", fontWeight = FontWeight.Bold)
+            Button(
+                onClick = onTryAgain,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Text("TRY AGAIN 🔁", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             }
-            OutlinedButton(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) {
-                Text("View History")
+
+            OutlinedButton(
+                onClick = onViewHistory,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(50),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Text("VIEW HISTORY 📊", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             }
         }
     }
@@ -872,6 +1000,7 @@ private fun SettingsContent(
         Spacer(modifier = Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             durationPresets.forEach { (seconds, label) ->
+                val isSelected = currentDuration == seconds
                 FilledTonalButton(
                     onClick = {
                         durationSlider = seconds.toFloat()
@@ -879,25 +1008,30 @@ private fun SettingsContent(
                         onDismiss()
                     },
                     modifier = Modifier.weight(1f),
-                    colors = if (currentDuration == seconds)
+                    shape = RoundedCornerShape(50),
+                    colors = if (isSelected)
                         ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                    else ButtonDefaults.filledTonalButtonColors()
-                ) { Text(label, maxLines = 1) }
+                    else ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
+                ) { Text(label, maxLines = 1, fontWeight = FontWeight.SemiBold) }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Custom: ${formatDuration(durationSlider.toInt())}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text("Custom: ${formatDuration(durationSlider.toInt())}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         Slider(
             value = durationSlider,
             onValueChange = { durationSlider = it },
             onValueChangeFinished = { onDurationSelected(durationSlider.toInt()) },
             valueRange = 15f..300f,
             steps = 56,
-            colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary)
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         )
         SliderLabels("15s", "5 min")
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         // ── Mic Sensitivity ──
         SectionLabel("🎙  Mic Sensitivity")
@@ -905,30 +1039,36 @@ private fun SettingsContent(
         Text(
             text = when {
                 sensitivitySlider < 0.33f -> "Low — only loud strums"
-                sensitivitySlider < 0.67f -> "Medium — normal strumming"
+                sensitivitySlider < 0.67f -> "Medium — normal acoustic strumming"
                 else                      -> "High — catches quiet strums"
             },
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Slider(
             value = sensitivitySlider,
             onValueChange = { sensitivitySlider = it },
             onValueChangeFinished = { onSensitivityChange(sensitivitySlider) },
             valueRange = 0f..1f,
-            colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary)
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         )
         SliderLabels("Loud only", "Very quiet")
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         // ── Debounce ──
-        SectionLabel("⚡  Min. Gap Between Strums")
+        SectionLabel("⚡  Minimum Gap Between Strums")
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "${debounceSlider.toInt()} ms",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
         Slider(
             value = debounceSlider,
@@ -936,7 +1076,11 @@ private fun SettingsContent(
             onValueChangeFinished = { onDebounceChange(debounceSlider.toInt()) },
             valueRange = 100f..800f,
             steps = 13,
-            colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary)
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         )
         SliderLabels("100ms (fast)", "800ms (slow)")
 
@@ -948,7 +1092,7 @@ private fun SettingsContent(
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.fillMaxWidth()
@@ -958,8 +1102,8 @@ private fun SectionLabel(text: String) {
 @Composable
 private fun SliderLabels(start: String, end: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(start, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-        Text(end,   style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+        Text(start, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(end,   style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -976,3 +1120,4 @@ private fun formatTimeMMSS(totalSeconds: Int): String {
     val s = totalSeconds % 60
     return if (m > 0) "%d:%02d".format(m, s) else "%ds".format(s)
 }
+
