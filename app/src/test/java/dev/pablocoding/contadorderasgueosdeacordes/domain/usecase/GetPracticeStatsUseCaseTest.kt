@@ -157,4 +157,18 @@ class GetPracticeStatsUseCaseTest {
         assertEquals(0, stats.currentStreakDays)
         assertEquals(3, stats.longestStreakDays)
     }
+
+    @Test
+    fun `flow calculates stats with dynamic timestamp on emission`() = runTest {
+        val day1 = dateToMillis(2026, 8, 29)
+        val sessions = listOf(
+            SessionResult(id = 1, timestamp = day1, durationSeconds = 60, transitionCount = 40)
+        )
+        every { repository.getAllSessions() } returns flowOf(sessions)
+
+        // Without fixed nowTimestamp, invoke evaluates System.currentTimeMillis() inside map{}
+        val stats = useCase(timeZone = timeZone).first()
+        assertEquals(1, stats.totalSessions)
+        assertEquals(40L, stats.totalStrums)
+    }
 }

@@ -31,11 +31,15 @@ class GetPracticeStatsUseCase @Inject constructor(
 ) {
 
     operator fun invoke(
-        timeZone: TimeZone = TimeZone.getDefault(),
-        nowTimestamp: Long = System.currentTimeMillis()
+        timeZone: TimeZone? = null,
+        nowTimestamp: Long? = null
     ): Flow<UserPracticeStats> {
         return repository.getAllSessions().map { sessions ->
-            calculateStats(sessions, timeZone, nowTimestamp)
+            calculateStats(
+                sessions = sessions,
+                timeZone = timeZone ?: TimeZone.getDefault(),
+                nowTimestamp = nowTimestamp ?: System.currentTimeMillis()
+            )
         }
     }
 
