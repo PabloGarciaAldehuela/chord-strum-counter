@@ -22,11 +22,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -777,23 +784,73 @@ private fun TimerRing(
         animationSpec = tween(durationMillis = 800),
         label = "timer_progress"
     )
+
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val progressColor = MaterialTheme.colorScheme.primary
+    val inlayColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.size(240.dp)
+        modifier = modifier.size(260.dp)
     ) {
-        CircularProgressIndicator(
-            progress = { 1f },
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            strokeWidth = 12.dp
-        )
-        CircularProgressIndicator(
-            progress = { animatedProgress },
-            modifier = Modifier.fillMaxSize(),
-            color = if (isRunning) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-            strokeWidth = 14.dp
-        )
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp)
+        ) {
+            val strokeWidthPx = 12.dp.toPx()
+            val innerPadding = strokeWidthPx / 2
+            val arcSize = Size(size.width - strokeWidthPx, size.height - strokeWidthPx)
+            val arcTopLeft = Offset(innerPadding, innerPadding)
+            val centerOffset = Offset(size.width / 2, size.height / 2)
+            val radius = (size.width - strokeWidthPx) / 2
+            val innerInlayRadius = radius - 14.dp.toPx()
+
+            // 1. Background Track (clean continuous circle)
+            drawCircle(
+                color = trackColor,
+                radius = radius,
+                center = centerOffset,
+                style = Stroke(width = strokeWidthPx)
+            )
+
+            // 2. Inner Inlay Dashed Ring (from Stitch design)
+            if (innerInlayRadius > 0) {
+                drawCircle(
+                    color = inlayColor,
+                    radius = innerInlayRadius,
+                    center = centerOffset,
+                    style = Stroke(
+                        width = 1.5.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 8.dp.toPx()), 0f)
+                    )
+                )
+            }
+
+            // 3. Active Progress Arc (rendered when session is running)
+            if (isRunning && animatedProgress > 0f) {
+                val sweep = (animatedProgress.coerceIn(0f, 1f)) * 360f
+                if (sweep >= 359.5f) {
+                    drawCircle(
+                        color = progressColor,
+                        radius = radius,
+                        center = centerOffset,
+                        style = Stroke(width = strokeWidthPx)
+                    )
+                } else {
+                    drawArc(
+                        color = progressColor,
+                        startAngle = -90f,
+                        sweepAngle = sweep,
+                        useCenter = false,
+                        topLeft = arcTopLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                    )
+                }
+            }
+        }
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.scale(counterScale)
@@ -807,11 +864,12 @@ private fun TimerRing(
                 lineHeight = 76.sp
             )
             Text(
-                text = if (isRunning) formatTimeMMSS(remainingSeconds) else "transitions",
+                text = if (isRunning) formatTimeMMSS(remainingSeconds) else "TRANSITIONS",
                 style = MaterialTheme.typography.labelMedium,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                letterSpacing = 2.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
     }
