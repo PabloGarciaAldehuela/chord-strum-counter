@@ -768,7 +768,7 @@ private fun ListeningIndicator() {
     }
 }
 
-// ── Timer ring ─────────────────────────────────────────────────────────────────
+// ── Timer ring (Material 3 Expressive Acoustic Rosette) ──────────────────────
 
 @Composable
 private fun TimerRing(
@@ -785,18 +785,31 @@ private fun TimerRing(
         label = "timer_progress"
     )
 
+    val infiniteGlow = rememberInfiniteTransition(label = "ring_glow")
+    val glowAlpha by infiniteGlow.animateFloat(
+        initialValue = 0.12f,
+        targetValue = 0.28f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow_pulse"
+    )
+
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val progressColor = MaterialTheme.colorScheme.primary
-    val inlayColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val glowColor = MaterialTheme.colorScheme.primary
+    val inlayColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+    val beadCoreColor = dev.pablocoding.contadorderasgueosdeacordes.ui.theme.IvoryBone
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.size(260.dp)
+        modifier = modifier.size(268.dp)
     ) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp)
+                .padding(16.dp)
         ) {
             val strokeWidthPx = 12.dp.toPx()
             val innerPadding = strokeWidthPx / 2
@@ -805,8 +818,25 @@ private fun TimerRing(
             val centerOffset = Offset(size.width / 2, size.height / 2)
             val radius = (size.width - strokeWidthPx) / 2
             val innerInlayRadius = radius - 14.dp.toPx()
+            val soundholeRadius = innerInlayRadius - 8.dp.toPx()
 
-            // 1. Background Track (clean continuous circle)
+            // 1. Acoustic Soundhole Depth (radial background)
+            if (soundholeRadius > 0) {
+                drawCircle(
+                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                        colors = listOf(
+                            trackColor.copy(alpha = 0.35f),
+                            trackColor.copy(alpha = 0.05f)
+                        ),
+                        center = centerOffset,
+                        radius = soundholeRadius
+                    ),
+                    radius = soundholeRadius,
+                    center = centerOffset
+                )
+            }
+
+            // 2. Background Track (clean continuous circular ring)
             drawCircle(
                 color = trackColor,
                 radius = radius,
@@ -814,7 +844,7 @@ private fun TimerRing(
                 style = Stroke(width = strokeWidthPx)
             )
 
-            // 2. Inner Inlay Dashed Ring (from Stitch design)
+            // 3. Inner Rosette Inlay Dashed Ring (from Luthier's Resonance design)
             if (innerInlayRadius > 0) {
                 drawCircle(
                     color = inlayColor,
@@ -822,14 +852,26 @@ private fun TimerRing(
                     center = centerOffset,
                     style = Stroke(
                         width = 1.5.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 8.dp.toPx()), 0f)
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 6.dp.toPx()), 0f)
                     )
                 )
             }
 
-            // 3. Active Progress Arc (rendered when session is running)
+            // 4. Ambient Strum Glow Aura (pulsing when active)
+            if (isRunning) {
+                drawCircle(
+                    color = glowColor.copy(alpha = glowAlpha),
+                    radius = radius + (strokeWidthPx / 2) + 2.dp.toPx(),
+                    center = centerOffset,
+                    style = Stroke(width = 4.dp.toPx())
+                )
+            }
+
+            // 5. Active Countdown Progress Arc with Leading Indicator Bead
             if (isRunning && animatedProgress > 0f) {
-                val sweep = (animatedProgress.coerceIn(0f, 1f)) * 360f
+                val clampedProgress = animatedProgress.coerceIn(0f, 1f)
+                val sweep = clampedProgress * 360f
+
                 if (sweep >= 359.5f) {
                     drawCircle(
                         color = progressColor,
@@ -847,6 +889,25 @@ private fun TimerRing(
                         size = arcSize,
                         style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
                     )
+
+                    // Calculate position of the leading bead at the arc's head
+                    val angleRad = Math.toRadians((-90.0 + sweep))
+                    val beadX = (centerOffset.x + radius * Math.cos(angleRad)).toFloat()
+                    val beadY = (centerOffset.y + radius * Math.sin(angleRad)).toFloat()
+                    val beadCenter = Offset(beadX, beadY)
+
+                    // Outer bead glow
+                    drawCircle(
+                        color = glowColor.copy(alpha = 0.5f),
+                        radius = 8.dp.toPx(),
+                        center = beadCenter
+                    )
+                    // Inner solid bead
+                    drawCircle(
+                        color = beadCoreColor,
+                        radius = 4.5.dp.toPx(),
+                        center = beadCenter
+                    )
                 }
             }
         }
@@ -857,20 +918,57 @@ private fun TimerRing(
         ) {
             Text(
                 text = "$transitionCount",
-                fontSize = 76.sp,
+                fontSize = 78.sp,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 76.sp
+                lineHeight = 78.sp
             )
-            Text(
-                text = if (isRunning) formatTimeMMSS(remainingSeconds) else "TRANSITIONS",
-                style = MaterialTheme.typography.labelMedium,
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 2.sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = if (isRunning)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                else
+                    androidx.compose.ui.graphics.Color.Transparent,
+                border = if (isRunning)
+                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                else null
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        horizontal = if (isRunning) 10.dp else 0.dp,
+                        vertical = if (isRunning) 3.dp else 0.dp
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (isRunning) {
+                        Text(
+                            text = "⏱",
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            text = formatTimeMMSS(remainingSeconds),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Text(
+                            text = "TRANSITIONS",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 2.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }
