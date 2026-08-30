@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -28,14 +29,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 
+
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -133,6 +138,23 @@ fun CounterScreen(
             counterScale = 1.35f
             delay(120)
             counterScale = 1f
+        }
+    }
+
+    // Fluid 60fps/120fps continuous countdown progress calculation
+    var fluidProgress by remember { mutableFloatStateOf(1f) }
+    LaunchedEffect(uiState.isRunning, uiState.durationSeconds) {
+        if (uiState.isRunning) {
+            val durationMs = (uiState.durationSeconds * 1000L).coerceAtLeast(1000L)
+            val startTime = android.os.SystemClock.elapsedRealtime()
+            while (true) {
+                withFrameNanos {
+                    val elapsed = android.os.SystemClock.elapsedRealtime() - startTime
+                    fluidProgress = (1f - (elapsed.toFloat() / durationMs.toFloat())).coerceIn(0f, 1f)
+                }
+            }
+        } else {
+            fluidProgress = 1f
         }
     }
 
@@ -247,9 +269,7 @@ fun CounterScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 TimerRing(
-                    progress = if (uiState.durationSeconds > 0)
-                        uiState.remainingSeconds.toFloat() / uiState.durationSeconds.toFloat()
-                    else 1f,
+                    progress = if (uiState.isRunning) fluidProgress else 1f,
                     transitionCount = uiState.transitionCount,
                     counterScale = animatedCounterScale,
                     remainingSeconds = uiState.remainingSeconds,
@@ -258,63 +278,78 @@ fun CounterScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                if (!uiState.isRunning && !uiState.isFinished) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                // Fixed-height status slot (60dp): duration pill when idle, listening indicator when running
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (uiState.isRunning) {
+                        ListeningIndicator()
+                    } else if (!uiState.isFinished) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                         ) {
-                            Text(
-                                text = "⏱",
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                            Text(
-                                text = "Duration: ${formatDuration(uiState.durationSeconds)}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "⏱",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    text = "Duration: ${formatDuration(uiState.durationSeconds)}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 if (!uiState.isFinished) {
-                    if (uiState.isRunning) {
-                        ListeningIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedButton(
-                            onClick = viewModel::onStop,
-                            modifier = Modifier
-                                .height(54.dp)
-                                .fillMaxWidth(0.75f),
-                            shape = RoundedCornerShape(50),
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.error),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text("STOP SESSION", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        Button(
-                            onClick = { tryStart() },
-                            modifier = Modifier
-                                .height(54.dp)
-                                .fillMaxWidth(0.75f),
-                            shape = RoundedCornerShape(50),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 1.dp)
-                        ) {
-                            Text("START PRACTICE 🎸", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (uiState.isRunning) {
+                            OutlinedButton(
+                                onClick = viewModel::onStop,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(0.75f),
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.error),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("STOP SESSION", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            Button(
+                                onClick = { tryStart() },
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(0.75f),
+                                shape = RoundedCornerShape(50),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 1.dp)
+                            ) {
+                                Text("START PRACTICE 🎸", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
+                            }
                         }
                     }
                 }
@@ -776,7 +811,7 @@ private fun ListeningIndicator() {
     }
 }
 
-// ── Timer ring (Material 3 Expressive Acoustic Rosette) ──────────────────────
+// ── Timer ring (Material 3 Expressive Acoustic Wavy Rosette) ──────────────────────
 
 @Composable
 private fun TimerRing(
@@ -787,16 +822,19 @@ private fun TimerRing(
     isRunning: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 800),
-        label = "timer_progress"
+    val infiniteTransition = rememberInfiniteTransition(label = "wavy_timer")
+    val wavePhase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "wave_phase"
     )
-
-    val infiniteGlow = rememberInfiniteTransition(label = "ring_glow")
-    val glowAlpha by infiniteGlow.animateFloat(
-        initialValue = 0.12f,
-        targetValue = 0.28f,
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.14f,
+        targetValue = 0.32f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -819,12 +857,9 @@ private fun TimerRing(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            val strokeWidthPx = 12.dp.toPx()
-            val innerPadding = strokeWidthPx / 2
-            val arcSize = Size(size.width - strokeWidthPx, size.height - strokeWidthPx)
-            val arcTopLeft = Offset(innerPadding, innerPadding)
+            val strokeWidthPx = 11.dp.toPx()
             val centerOffset = Offset(size.width / 2, size.height / 2)
-            val radius = (size.width - strokeWidthPx) / 2
+            val radius = (size.width - strokeWidthPx - 10.dp.toPx()) / 2
             val innerInlayRadius = radius - 14.dp.toPx()
             val soundholeRadius = innerInlayRadius - 8.dp.toPx()
 
@@ -844,15 +879,7 @@ private fun TimerRing(
                 )
             }
 
-            // 2. Background Track (clean continuous circular ring)
-            drawCircle(
-                color = trackColor,
-                radius = radius,
-                center = centerOffset,
-                style = Stroke(width = strokeWidthPx)
-            )
-
-            // 3. Inner Rosette Inlay Dashed Ring (from Luthier's Resonance design)
+            // 2. Inner Rosette Inlay Dashed Ring (from Luthier's Resonance design)
             if (innerInlayRadius > 0) {
                 drawCircle(
                     color = inlayColor,
@@ -865,58 +892,84 @@ private fun TimerRing(
                 )
             }
 
+            // 3. Wavy Acoustic Tracks (Material 3 Expressive CircularWavyProgressIndicator)
+            val numPoints = 240
+            val waveFrequency = 14f // 14 gentle harmonic waves around the ring
+            val waveAmplitude = if (isRunning) 3.5.dp.toPx() else 0f
+
+            // Full background wavy circle path
+            val bgPath = Path()
+            for (i in 0..numPoints) {
+                val angleDeg = -90f + (i.toFloat() / numPoints.toFloat()) * 360f
+                val angleRad = Math.toRadians(angleDeg.toDouble())
+                val waveOffset = waveAmplitude * kotlin.math.sin(waveFrequency * angleRad + wavePhase).toFloat()
+                val r = radius + waveOffset
+                val x = (centerOffset.x + r * kotlin.math.cos(angleRad)).toFloat()
+                val y = (centerOffset.y + r * kotlin.math.sin(angleRad)).toFloat()
+                if (i == 0) bgPath.moveTo(x, y) else bgPath.lineTo(x, y)
+            }
+            bgPath.close()
+
+            // Draw Background Track
+            drawPath(
+                path = bgPath,
+                color = trackColor,
+                style = Stroke(width = strokeWidthPx)
+            )
+
             // 4. Ambient Strum Glow Aura (pulsing when active)
             if (isRunning) {
-                drawCircle(
+                drawPath(
+                    path = bgPath,
                     color = glowColor.copy(alpha = glowAlpha),
-                    radius = radius + (strokeWidthPx / 2) + 2.dp.toPx(),
-                    center = centerOffset,
-                    style = Stroke(width = 4.dp.toPx())
+                    style = Stroke(width = strokeWidthPx + 6.dp.toPx())
                 )
             }
 
             // 5. Active Countdown Progress Arc with Leading Indicator Bead
-            if (isRunning && animatedProgress > 0f) {
-                val clampedProgress = animatedProgress.coerceIn(0f, 1f)
-                val sweep = clampedProgress * 360f
+            if (isRunning && progress > 0f) {
+                val clampedProgress = progress.coerceIn(0f, 1f)
+                val sweepPoints = (clampedProgress * numPoints).toInt().coerceAtLeast(2)
+                val progressPath = Path()
+                var beadX = centerOffset.x
+                var beadY = centerOffset.y
 
-                if (sweep >= 359.5f) {
-                    drawCircle(
-                        color = progressColor,
-                        radius = radius,
-                        center = centerOffset,
-                        style = Stroke(width = strokeWidthPx)
-                    )
-                } else {
-                    drawArc(
-                        color = progressColor,
-                        startAngle = -90f,
-                        sweepAngle = sweep,
-                        useCenter = false,
-                        topLeft = arcTopLeft,
-                        size = arcSize,
-                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-                    )
-
-                    // Calculate position of the leading bead at the arc's head
-                    val angleRad = Math.toRadians((-90.0 + sweep))
-                    val beadX = (centerOffset.x + radius * Math.cos(angleRad)).toFloat()
-                    val beadY = (centerOffset.y + radius * Math.sin(angleRad)).toFloat()
-                    val beadCenter = Offset(beadX, beadY)
-
-                    // Outer bead glow
-                    drawCircle(
-                        color = glowColor.copy(alpha = 0.5f),
-                        radius = 8.dp.toPx(),
-                        center = beadCenter
-                    )
-                    // Inner solid bead
-                    drawCircle(
-                        color = beadCoreColor,
-                        radius = 4.5.dp.toPx(),
-                        center = beadCenter
-                    )
+                for (i in 0..sweepPoints) {
+                    val angleDeg = -90f + (i.toFloat() / numPoints.toFloat()) * 360f
+                    val angleRad = Math.toRadians(angleDeg.toDouble())
+                    val waveOffset = waveAmplitude * kotlin.math.sin(waveFrequency * angleRad + wavePhase).toFloat()
+                    val r = radius + waveOffset
+                    val x = (centerOffset.x + r * kotlin.math.cos(angleRad)).toFloat()
+                    val y = (centerOffset.y + r * kotlin.math.sin(angleRad)).toFloat()
+                    if (i == 0) {
+                        progressPath.moveTo(x, y)
+                    } else {
+                        progressPath.lineTo(x, y)
+                    }
+                    if (i == sweepPoints) {
+                        beadX = x
+                        beadY = y
+                    }
                 }
+
+                drawPath(
+                    path = progressPath,
+                    color = progressColor,
+                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                )
+
+                // Leading glowing bead on the wave crest
+                val beadCenter = Offset(beadX, beadY)
+                drawCircle(
+                    color = glowColor.copy(alpha = 0.6f),
+                    radius = 8.5.dp.toPx(),
+                    center = beadCenter
+                )
+                drawCircle(
+                    color = beadCoreColor,
+                    radius = 4.5.dp.toPx(),
+                    center = beadCenter
+                )
             }
         }
 
