@@ -291,8 +291,8 @@ fun CounterScreen(
                         OutlinedButton(
                             onClick = viewModel::onStop,
                             modifier = Modifier
-                                .height(50.dp)
-                                .fillMaxWidth(0.65f),
+                                .height(54.dp)
+                                .fillMaxWidth(0.75f),
                             shape = RoundedCornerShape(50),
                             border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.error),
                             colors = ButtonDefaults.outlinedButtonColors(
@@ -306,7 +306,7 @@ fun CounterScreen(
                             onClick = { tryStart() },
                             modifier = Modifier
                                 .height(54.dp)
-                                .fillMaxWidth(0.72f),
+                                .fillMaxWidth(0.75f),
                             shape = RoundedCornerShape(50),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -439,7 +439,7 @@ private fun ChordProgressionBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -478,14 +478,22 @@ private fun ChordProgressionBar(
                 }
             }
 
-            if (!isRunning) {
-                IconButton(onClick = onEditClick) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Chords",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
+            Box(
+                modifier = Modifier.size(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!isRunning) {
+                    IconButton(
+                        onClick = onEditClick,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Chords",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
