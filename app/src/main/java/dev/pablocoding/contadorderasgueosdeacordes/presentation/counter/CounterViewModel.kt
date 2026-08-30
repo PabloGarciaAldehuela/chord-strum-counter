@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
-import dev.pablocoding.contadorderasgueosdeacordes.domain.model.ChordLibrary
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository

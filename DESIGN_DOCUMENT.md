@@ -577,7 +577,7 @@ graph TD
 * Metronome tones are procedurally generated at low latency using Android `AudioTrack`:
   * *Accented Beat 1:* High woodblock pitch ($1760\text{ Hz}$).
   * *Beats 2, 3, 4:* Low woodblock pitch ($880\text{ Hz}$).
-  * Rich, organic woodblock acoustic timber.
+  * Rich, organic woodblock acoustic timbre.
 
 ---
 

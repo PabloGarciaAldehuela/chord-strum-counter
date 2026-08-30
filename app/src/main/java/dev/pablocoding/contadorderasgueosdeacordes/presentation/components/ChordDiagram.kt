@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +32,9 @@ fun ChordDiagram(
     val primaryColor = MaterialTheme.colorScheme.primary
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val fretboardColor = MaterialTheme.colorScheme.surfaceVariant
+    val onPrimaryArgb = MaterialTheme.colorScheme.onPrimary.toArgb()
+    val errorArgb = MaterialTheme.colorScheme.error.toArgb()
+    val labelArgb = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f).toArgb()
 
     Column(
         modifier = modifier
@@ -63,7 +67,10 @@ fun ChordDiagram(
                     chord = chord,
                     primaryColor = primaryColor,
                     stringColor = onSurfaceColor.copy(alpha = 0.6f),
-                    nutColor = onSurfaceColor
+                    nutColor = onSurfaceColor,
+                    onPrimaryArgb = onPrimaryArgb,
+                    errorArgb = errorArgb,
+                    labelArgb = labelArgb
                 )
             }
         }
@@ -74,7 +81,10 @@ private fun DrawScope.drawGuitarFretboard(
     chord: Chord,
     primaryColor: Color,
     stringColor: Color,
-    nutColor: Color
+    nutColor: Color,
+    onPrimaryArgb: Int,
+    errorArgb: Int,
+    labelArgb: Int
 ) {
     val numStrings = 6
     val numFrets = 4
@@ -134,7 +144,6 @@ private fun DrawScope.drawGuitarFretboard(
 
     // 4. Draw Open / Muted string markers and Finger Dots
     val paint = android.graphics.Paint().apply {
-        color = android.graphics.Color.WHITE
         textSize = 24f
         textAlign = android.graphics.Paint.Align.CENTER
         isAntiAlias = true
@@ -142,7 +151,7 @@ private fun DrawScope.drawGuitarFretboard(
     }
 
     val stringLabelPaint = android.graphics.Paint().apply {
-        color = android.graphics.Color.GRAY
+        color = labelArgb
         textSize = 20f
         textAlign = android.graphics.Paint.Align.CENTER
         isAntiAlias = true
@@ -159,7 +168,8 @@ private fun DrawScope.drawGuitarFretboard(
         when (fret) {
             -1 -> {
                 // Muted string 'X'
-                drawContext.canvas.nativeCanvas.drawText("✕", x, topPadding - 10f, paint.apply { color = android.graphics.Color.RED })
+                paint.color = errorArgb
+                drawContext.canvas.nativeCanvas.drawText("✕", x, topPadding - 10f, paint)
             }
             0 -> {
                 // Open string 'O'
@@ -184,11 +194,12 @@ private fun DrawScope.drawGuitarFretboard(
                     )
 
                     if (finger > 0) {
+                        paint.color = onPrimaryArgb
                         drawContext.canvas.nativeCanvas.drawText(
                             "$finger",
                             x,
                             dotY + 8f,
-                            paint.apply { color = android.graphics.Color.BLACK }
+                            paint
                         )
                     }
                 }
