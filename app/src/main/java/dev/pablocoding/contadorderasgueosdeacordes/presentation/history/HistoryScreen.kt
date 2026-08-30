@@ -105,7 +105,10 @@ fun HistoryScreen(
                     // ── Practiced Chords Repertoire ──
                     if (uiState.stats.mostPracticedChords.isNotEmpty()) {
                         item(key = "chord_repertoire") {
-                            PracticedChordsSection(chords = uiState.stats.mostPracticedChords)
+                            PracticedChordsSection(
+                                chords = uiState.stats.mostPracticedChords,
+                                favoriteProgression = uiState.stats.mostPracticedProgression
+                            )
                         }
                     }
 
@@ -281,17 +284,34 @@ private fun SecondaryStatItem(label: String, value: String) {
 // ── Practiced Chords Repertoire Section ─────────────────────────────────────
 
 @Composable
-private fun PracticedChordsSection(chords: List<ChordPracticeCount>) {
+private fun PracticedChordsSection(
+    chords: List<ChordPracticeCount>,
+    favoriteProgression: String?
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(
-            text = "Most Practiced Chords",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Most Practiced Chords",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            if (favoriteProgression != null) {
+                Text(
+                    text = "Fav: $favoriteProgression",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
 
         Row(
             modifier = Modifier
