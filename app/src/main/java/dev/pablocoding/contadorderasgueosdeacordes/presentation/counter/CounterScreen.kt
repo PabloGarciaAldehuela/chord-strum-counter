@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -146,7 +144,8 @@ fun CounterScreen(
     LaunchedEffect(uiState.isRunning, uiState.durationSeconds) {
         if (uiState.isRunning) {
             val durationMs = (uiState.durationSeconds * 1000L).coerceAtLeast(1000L)
-            val startTime = android.os.SystemClock.elapsedRealtime()
+            val alreadyElapsedMs = ((uiState.durationSeconds - uiState.remainingSeconds) * 1000L).coerceAtLeast(0L)
+            val startTime = android.os.SystemClock.elapsedRealtime() - alreadyElapsedMs
             while (true) {
                 withFrameNanos {
                     val elapsed = android.os.SystemClock.elapsedRealtime() - startTime

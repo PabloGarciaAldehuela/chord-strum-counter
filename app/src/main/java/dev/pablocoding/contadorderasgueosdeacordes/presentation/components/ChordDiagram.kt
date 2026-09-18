@@ -32,10 +32,8 @@ fun ChordDiagram(
     modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
     val surfaceColor = MaterialTheme.colorScheme.surface
-    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
     val onPrimaryArgb = MaterialTheme.colorScheme.onPrimary.toArgb()
     val errorArgb = MaterialTheme.colorScheme.error.toArgb()
     val labelArgb = onSurfaceVariantColor.toArgb()
