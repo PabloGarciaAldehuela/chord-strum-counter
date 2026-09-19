@@ -3,6 +3,8 @@ package dev.pablocoding.contadorderasgueosdeacordes.data.audio
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.SystemClock
+import dev.pablocoding.contadorderasgueosdeacordes.domain.audio.StrumDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +17,13 @@ import javax.inject.Singleton
 private const val SAMPLE_RATE = 44100
 
 @Singleton
-class AudioDetector @Inject constructor() {
+class AudioDetector @Inject constructor(
+    private val timeSource: TimeSource
+) {
+    /**
+     * Secondary constructor for direct instantiation without dependency injection.
+     */
+    constructor() : this(TimeSource { SystemClock.elapsedRealtime() })
 
     /**
      * Emits [Unit] each time a guitar strum is detected.
@@ -23,7 +31,10 @@ class AudioDetector @Inject constructor() {
      * @param sensitivity 0.0 = only loud strums count, 1.0 = even quiet strums count.
      * @param debounceMs  Minimum milliseconds between two counted strums. Default 350ms.
      */
-    fun detectStrums(sensitivity: Float = 0.6f, debounceMs: Long = 350L): Flow<Unit> = flow {
+    fun detectStrums(
+        sensitivity: Float = StrumDetector.DEFAULT_SENSITIVITY,
+        debounceMs: Long = StrumDetector.DEFAULT_DEBOUNCE_MS
+    ): Flow<Unit> = flow {
         val minBuffer = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO,
@@ -49,8 +60,7 @@ class AudioDetector @Inject constructor() {
             return@flow
         }
 
-        val threshold = AudioDetectionMath.calculateThreshold(sensitivity)
-        var lastDetectionTime = 0L
+        val strumDetector = StrumDetector(sensitivity, debounceMs)
         val buffer = ShortArray(bufferSize)
 
         try {
@@ -58,10 +68,8 @@ class AudioDetector @Inject constructor() {
             while (currentCoroutineContext().isActive) {
                 val read = audioRecord.read(buffer, 0, bufferSize)
                 if (read > 0) {
-                    val rms = AudioDetectionMath.calculateRms(buffer, read)
-                    val now = System.currentTimeMillis()
-                    if (AudioDetectionMath.shouldTriggerStrum(rms, threshold, now, lastDetectionTime, debounceMs)) {
-                        lastDetectionTime = now
+                    val nowMs = timeSource.elapsedRealtime()
+                    if (strumDetector.process(buffer, read, nowMs)) {
                         emit(Unit)
                     }
                 } else if (read < 0) {
@@ -79,4 +87,3 @@ class AudioDetector @Inject constructor() {
         }
     }.flowOn(Dispatchers.IO)
 }
-

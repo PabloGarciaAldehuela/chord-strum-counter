@@ -70,5 +70,12 @@ abstract class AppModule {
         @Provides
         @Singleton
         fun provideSessionDao(db: AppDatabase): SessionDao = db.sessionDao()
+
+        @Provides
+        @Singleton
+        fun provideTimeSource(): dev.pablocoding.contadorderasgueosdeacordes.data.audio.TimeSource =
+            dev.pablocoding.contadorderasgueosdeacordes.data.audio.TimeSource {
+                android.os.SystemClock.elapsedRealtime()
+            }
     }
 }
