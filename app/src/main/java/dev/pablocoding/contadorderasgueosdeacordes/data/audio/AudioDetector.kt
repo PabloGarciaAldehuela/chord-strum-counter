@@ -3,7 +3,6 @@ package dev.pablocoding.contadorderasgueosdeacordes.data.audio
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.SystemClock
 import dev.pablocoding.contadorderasgueosdeacordes.domain.audio.StrumDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -20,11 +19,6 @@ private const val SAMPLE_RATE = 44100
 class AudioDetector @Inject constructor(
     private val timeSource: TimeSource
 ) {
-    /**
-     * Secondary constructor for direct instantiation without dependency injection.
-     */
-    constructor() : this(TimeSource { SystemClock.elapsedRealtime() })
-
     /**
      * Emits [Unit] each time a guitar strum is detected.
      *
