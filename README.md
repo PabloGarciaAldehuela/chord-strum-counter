@@ -1,5 +1,7 @@
 # 🎸 Chord Strum Counter
 
+[![CI](https://github.com/PabloGarciaAldehuela/chord-strum-counter/actions/workflows/ci.yml/badge.svg)](https://github.com/PabloGarciaAldehuela/chord-strum-counter/actions/workflows/ci.yml)
+
 An Android application built with **Kotlin**, **Jetpack Compose**, and **Clean Architecture** to help guitarists practice chord transitions and strum speed automatically without taking hands off the guitar.
 
 ---
