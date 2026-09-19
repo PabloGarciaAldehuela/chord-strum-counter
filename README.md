@@ -47,7 +47,7 @@ An Android application built with **Kotlin**, **Jetpack Compose**, and **Clean A
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Android Studio Hedgehog | 2023.1.1 or newer
+- Android Studio Ladybug | 2024.2.1 or newer
 - Android SDK (API Level 24 minimum, target API 35+)
 - JDK 17+
 
@@ -66,6 +66,30 @@ An Android application built with **Kotlin**, **Jetpack Compose**, and **Clean A
    ```bash
    ./gradlew installDebug
    ```
+
+### Running Tests
+
+Execute local JVM unit tests across all architecture layers:
+```bash
+./gradlew test
+```
+
+Generate JaCoCo code coverage reports:
+```bash
+./gradlew jacocoTestReport
+```
+
+---
+
+## How This Was Built (DRAFT)
+
+> [!NOTE]
+> DRAFT - Please review and edit before merging.
+
+This application was developed using an AI-assisted engineering workflow:
+- UI design exploration and visual layout specifications were generated using Google Stitch (documented in `docs/STITCH_PROMPTS.md` and `docs/DESIGN_DOCUMENT.md`).
+- Implementation, test scaffolding, and continuous integration workflows were developed with an AI coding agent.
+- System architecture decisions, Clean Architecture boundaries, feature scope, and code reviews were directed and performed by Pablo Garcia Aldehuela.
 
 ---
 
