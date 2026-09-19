@@ -76,4 +76,46 @@ class HistoryViewModelTest {
             assertEquals(2L, state.bestSessionId)
         }
     }
+
+    @Test
+    fun `uiState handles single session correctly`() = runTest {
+        val singleSession = listOf(
+            SessionResult(id = 99L, timestamp = 5000L, durationSeconds = 60, transitionCount = 42)
+        )
+        val mockStats = UserPracticeStats(
+            totalStrums = 42L,
+            totalPracticeSeconds = 60L,
+            totalSessions = 1,
+            bestSessionCount = 42
+        )
+        every { getSessionHistoryUseCase() } returns flowOf(singleSession)
+        every { getPracticeStatsUseCase.calculateStats(singleSession, any(), any()) } returns mockStats
+
+        val viewModel = HistoryViewModel(getSessionHistoryUseCase, getPracticeStatsUseCase)
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(1, state.sessions.size)
+            assertEquals(99L, state.bestSessionId)
+            assertEquals(42, state.stats.bestSessionCount)
+        }
+    }
+
+    @Test
+    fun `uiState picks first maximal session when there is a tie`() = runTest {
+        val tiedSessions = listOf(
+            SessionResult(id = 10L, timestamp = 1000L, durationSeconds = 60, transitionCount = 50),
+            SessionResult(id = 20L, timestamp = 2000L, durationSeconds = 60, transitionCount = 50)
+        )
+        every { getSessionHistoryUseCase() } returns flowOf(tiedSessions)
+        every { getPracticeStatsUseCase.calculateStats(tiedSessions, any(), any()) } returns UserPracticeStats(bestSessionCount = 50)
+
+        val viewModel = HistoryViewModel(getSessionHistoryUseCase, getPracticeStatsUseCase)
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(2, state.sessions.size)
+            assertEquals(10L, state.bestSessionId)
+        }
+    }
 }
