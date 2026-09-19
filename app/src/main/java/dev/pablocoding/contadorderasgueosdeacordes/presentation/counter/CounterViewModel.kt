@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.ClearSessionErrorUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetChordLibraryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetMetronomeStateUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetPracticeStatsUseCase
@@ -66,7 +68,7 @@ class CounterViewModel @Inject constructor(
     private val updateSelectedChords: UpdateSelectedChordsUseCase,
     private val getChordLibrary: GetChordLibraryUseCase,
     getMetronomeState: GetMetronomeStateUseCase,
-    private val clearSessionError: dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.ClearSessionErrorUseCase
+    private val clearSessionError: ClearSessionErrorUseCase
 ) : ViewModel() {
 
     private val _durationSeconds = MutableStateFlow(60)
@@ -94,11 +96,11 @@ class CounterViewModel @Inject constructor(
         getPracticeStats()
     ) { session, settings, metronome, stats ->
         val errorMsg = when (session.error) {
-            dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError.MicrophonePermissionDenied ->
+            SessionError.MicrophonePermissionDenied ->
                 "Microphone permission is required to detect guitar strums."
-            dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError.MicrophoneUnavailable ->
+            SessionError.MicrophoneUnavailable ->
                 "Microphone hardware is unavailable or in use by another app."
-            dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError.RecordingFailed ->
+            SessionError.RecordingFailed ->
                 "Audio recording encountered an error. Please try again."
             null -> null
         }
