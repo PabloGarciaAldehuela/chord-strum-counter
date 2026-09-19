@@ -47,7 +47,7 @@ An Android application built with **Kotlin**, **Jetpack Compose**, and **Clean A
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Android Studio Ladybug | 2024.2.1 or newer
+- Android Studio Otter | 2025.1+ (or an Android Studio version compatible with AGP 9.x)
 - Android SDK (API Level 24 minimum, target API 35+)
 - JDK 17+
 
