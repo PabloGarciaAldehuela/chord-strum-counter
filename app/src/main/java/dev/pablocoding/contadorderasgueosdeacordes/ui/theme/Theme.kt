@@ -13,33 +13,46 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = AmberGold,
-    onPrimary = FretboardBlack,
-    primaryContainer = RosewoodMid,
+    onPrimary = EbonyDark,
+    primaryContainer = OiledMahogany,
     onPrimaryContainer = AmberLight,
     secondary = RosewoodLight,
-    onSecondary = StringSilver,
-    background = FretboardBlack,
-    onBackground = StringSilver,
+    onSecondary = IvoryBone,
+    secondaryContainer = OiledMahogany,
+    onSecondaryContainer = AmberLight,
+    tertiary = SpruceCream,
+    onTertiary = EbonyDark,
+    background = EbonyDark,
+    onBackground = IvoryBone,
     surface = SurfaceDark,
-    onSurface = StringSilver,
+    onSurface = IvoryBone,
     surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = StringSilver,
-    error = ErrorRed
+    onSurfaceVariant = SpruceCream,
+    outline = PhosphorBronze,
+    outlineVariant = SurfaceVariantDark,
+    error = EmberCrimson,
+    onError = IvoryBone
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = RosewoodLightTheme,
+    primary = AmberWarmLight,
     onPrimary = SurfaceLight,
     primaryContainer = SurfaceVariantLight,
-    onPrimaryContainer = RosewoodLightTheme,
-    secondary = AmberLightTheme,
-    onSecondary = OnSurfaceLight,
+    onPrimaryContainer = RosewoodDarkAccent,
+    secondary = RosewoodDarkAccent,
+    onSecondary = SurfaceLight,
+    tertiary = OnSurfaceMuted,
+    onTertiary = SurfaceLight,
     background = SurfaceLight,
-    onBackground = OnSurfaceLight,
+    onBackground = RosewoodDarkAccent,
     surface = SurfaceLight,
-    onSurface = OnSurfaceLight,
+    onSurface = RosewoodDarkAccent,
     surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = OnSurfaceLight
+    onSurfaceVariant = OnSurfaceMuted,
+    outline = OnSurfaceMuted,
+    outlineVariant = SurfaceVariantLight,
+    error = EmberCrimson,
+    onError = SurfaceLight
 )
 
 @Composable
