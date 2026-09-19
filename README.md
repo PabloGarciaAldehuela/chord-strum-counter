@@ -4,6 +4,14 @@ An Android application built with **Kotlin**, **Jetpack Compose**, and **Clean A
 
 ---
 
+## 📱 Screenshots
+
+| Practice & Metronome | Chord Selection | Fretboard Diagrams | History & Stats |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/practice_screen.jpg" width="220" alt="Practice Screen & Metronome" /> | <img src="docs/screenshots/chord_selection.jpg" width="220" alt="Chord Selection Modal" /> | <img src="docs/screenshots/chord_diagram.jpg" width="220" alt="Interactive Fretboard Diagram" /> | <img src="docs/screenshots/session_history.jpg" width="220" alt="Session History and Stats" /> |
+
+---
+
 ## ✨ Features
 
 - 🎙 **Microphone-Based Strum Detection:** Automatically counts chord strums in real time using PCM audio amplitude (RMS) analysis and configurable sensitivity.
@@ -12,6 +20,9 @@ An Android application built with **Kotlin**, **Jetpack Compose**, and **Clean A
   - Low-latency procedural audio synthesis using `AudioTrack` (woodblock/click tones, accented beat 1).
   - Customizable tempo from 40 to 240 BPM with quick steppers (`-5`, `-1`, `+1`, `+5`) and smooth slider.
   - Real-time 4-beat visualizer pulsing in sync with the audio.
+- 🎸 **Chord Library & Fretboard Diagrams:**
+  - Fast chord pair and progression selection with popular presets (e.g., A ⇄ D, C ⇄ G ⇄ Am).
+  - Visual fretboard diagrams with exact fingerings, open strings, and muted markers.
 - 🏆 **Session History & Personal Bests:** Local database tracking practice history, average transitions, and personal best records.
 - 🎨 **Guitar-Inspired UI & Animations:**
   - Rosewood / mahogany dark theme with warm amber/gold accents.
