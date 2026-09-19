@@ -1,6 +1,7 @@
 package dev.pablocoding.contadorderasgueosdeacordes.di
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
@@ -11,6 +12,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.pablocoding.contadorderasgueosdeacordes.data.audio.TimeSource
 import dev.pablocoding.contadorderasgueosdeacordes.data.db.AppDatabase
 import dev.pablocoding.contadorderasgueosdeacordes.data.db.MIGRATION_1_2
 import dev.pablocoding.contadorderasgueosdeacordes.data.db.dao.SessionDao
@@ -73,9 +75,8 @@ abstract class AppModule {
 
         @Provides
         @Singleton
-        fun provideTimeSource(): dev.pablocoding.contadorderasgueosdeacordes.data.audio.TimeSource =
-            dev.pablocoding.contadorderasgueosdeacordes.data.audio.TimeSource {
-                android.os.SystemClock.elapsedRealtime()
-            }
+        fun provideTimeSource(): TimeSource = TimeSource {
+            SystemClock.elapsedRealtime()
+        }
     }
 }
