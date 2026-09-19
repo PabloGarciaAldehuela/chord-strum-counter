@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.ClearSessionErrorUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetChordLibraryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetMetronomeStateUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetPracticeStatsUseCase
@@ -45,7 +47,8 @@ data class CounterUiState(
     val metronomeTempoName: String = "Andante",
     val selectedChords: List<String> = listOf("A", "D"),
     val lifetimeStrums: Long = 0,
-    val currentStreakDays: Int = 0
+    val currentStreakDays: Int = 0,
+    val errorMessage: String? = null
 )
 
 @HiltViewModel
@@ -64,7 +67,8 @@ class CounterViewModel @Inject constructor(
     private val getSelectedChords: GetSelectedChordsUseCase,
     private val updateSelectedChords: UpdateSelectedChordsUseCase,
     private val getChordLibrary: GetChordLibraryUseCase,
-    getMetronomeState: GetMetronomeStateUseCase
+    getMetronomeState: GetMetronomeStateUseCase,
+    private val clearSessionError: ClearSessionErrorUseCase
 ) : ViewModel() {
 
     private val _durationSeconds = MutableStateFlow(60)
@@ -91,6 +95,15 @@ class CounterViewModel @Inject constructor(
         getMetronomeState(),
         getPracticeStats()
     ) { session, settings, metronome, stats ->
+        val errorMsg = when (session.error) {
+            SessionError.MicrophonePermissionDenied ->
+                "Microphone permission is required to detect guitar strums."
+            SessionError.MicrophoneUnavailable ->
+                "Microphone hardware is unavailable or in use by another app."
+            SessionError.RecordingFailed ->
+                "Audio recording encountered an error. Please try again."
+            null -> null
+        }
         CounterUiState(
             transitionCount = session.transitionCount,
             remainingSeconds = session.remainingSeconds,
@@ -106,7 +119,8 @@ class CounterViewModel @Inject constructor(
             metronomeTempoName = metronome.tempoName,
             selectedChords = if (session.isRunning || session.isFinished) session.chords else settings.selectedChords,
             lifetimeStrums = stats.totalStrums,
-            currentStreakDays = stats.currentStreakDays
+            currentStreakDays = stats.currentStreakDays,
+            errorMessage = errorMsg
         )
     }.stateIn(
         scope = viewModelScope,
@@ -131,12 +145,19 @@ class CounterViewModel @Inject constructor(
     fun onStart() {
         viewModelScope.launch {
             _isPersonalBest.value = false
+            clearSessionError()
             startSession(_durationSeconds.value, _selectedChords.value)
         }
     }
 
     fun onStop() {
         viewModelScope.launch { stopSession() }
+    }
+
+    fun onDismissError() {
+        viewModelScope.launch {
+            clearSessionError()
+        }
     }
 
     fun onDurationChange(seconds: Int) {

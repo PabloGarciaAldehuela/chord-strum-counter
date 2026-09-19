@@ -3,6 +3,8 @@ package dev.pablocoding.contadorderasgueosdeacordes.data.audio
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.util.Log
+import dev.pablocoding.contadorderasgueosdeacordes.domain.audio.AudioDetectionException
 import dev.pablocoding.contadorderasgueosdeacordes.domain.audio.StrumDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -13,6 +15,7 @@ import kotlinx.coroutines.isActive
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val TAG = "AudioDetector"
 private const val SAMPLE_RATE = 44100
 
 @Singleton
@@ -24,6 +27,7 @@ class AudioDetector @Inject constructor(
      *
      * @param sensitivity 0.0 = only loud strums count, 1.0 = even quiet strums count.
      * @param debounceMs  Minimum milliseconds between two counted strums. Default 350ms.
+     * @throws AudioDetectionException when microphone access is denied or hardware fails.
      */
     fun detectStrums(
         sensitivity: Float = StrumDetector.DEFAULT_SENSITIVITY,
@@ -34,6 +38,11 @@ class AudioDetector @Inject constructor(
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT
         )
+        if (minBuffer <= 0) {
+            throw AudioDetectionException.MicrophoneUnavailable(
+                "AudioRecord minBufferSize query returned invalid buffer size: $minBuffer"
+            )
+        }
         val bufferSize = maxOf(minBuffer, 2048)
 
         val audioRecord = try {
@@ -45,13 +54,25 @@ class AudioDetector @Inject constructor(
                 bufferSize
             )
         } catch (e: SecurityException) {
-            e.printStackTrace()
-            return@flow
+            Log.w(TAG, "Permission denied when creating AudioRecord", e)
+            throw AudioDetectionException.PermissionDenied(
+                "Microphone permission is required to detect guitar strums",
+                e
+            )
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Invalid AudioRecord parameters", e)
+            throw AudioDetectionException.MicrophoneUnavailable(
+                "Audio hardware does not support requested configuration",
+                e
+            )
         }
 
         if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
             audioRecord.release()
-            return@flow
+            Log.e(TAG, "AudioRecord state not initialized (hardware unavailable or busy)")
+            throw AudioDetectionException.MicrophoneUnavailable(
+                "Microphone hardware is unavailable or in use by another application"
+            )
         }
 
         val strumDetector = StrumDetector(sensitivity, debounceMs)
@@ -59,6 +80,11 @@ class AudioDetector @Inject constructor(
 
         try {
             audioRecord.startRecording()
+            if (audioRecord.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
+                throw AudioDetectionException.RecordingFailed(
+                    "AudioRecord could not start recording (state: ${audioRecord.recordingState})"
+                )
+            }
             while (currentCoroutineContext().isActive) {
                 val read = audioRecord.read(buffer, 0, bufferSize)
                 if (read > 0) {
@@ -67,15 +93,18 @@ class AudioDetector @Inject constructor(
                         emit(Unit)
                     }
                 } else if (read < 0) {
-                    // AudioRecord error code returned (e.g., ERROR_INVALID_OPERATION)
-                    break
+                    // AudioRecord error code returned (e.g., ERROR_INVALID_OPERATION, ERROR_DEAD_OBJECT)
+                    Log.e(TAG, "AudioRecord read returned error code: $read")
+                    throw AudioDetectionException.RecordingFailed("AudioRecord read error: $read")
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         } finally {
-            if (audioRecord.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                audioRecord.stop()
+            try {
+                if (audioRecord.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    audioRecord.stop()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception while stopping AudioRecord", e)
             }
             audioRecord.release()
         }

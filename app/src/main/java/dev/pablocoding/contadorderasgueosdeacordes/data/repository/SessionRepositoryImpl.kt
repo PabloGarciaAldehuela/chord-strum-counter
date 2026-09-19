@@ -1,10 +1,13 @@
 package dev.pablocoding.contadorderasgueosdeacordes.data.repository
 
 import android.os.CountDownTimer
+import android.util.Log
 import dev.pablocoding.contadorderasgueosdeacordes.data.audio.AudioDetector
 import dev.pablocoding.contadorderasgueosdeacordes.data.datasource.PreferencesDataSource
 import dev.pablocoding.contadorderasgueosdeacordes.di.ApplicationScope
+import dev.pablocoding.contadorderasgueosdeacordes.domain.audio.AudioDetectionException
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -16,6 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "SessionRepository"
 
 @Singleton
 class SessionRepositoryImpl @Inject constructor(
@@ -43,7 +48,8 @@ class SessionRepositoryImpl @Inject constructor(
             isRunning = true,
             isFinished = false,
             remainingSeconds = durationSeconds,
-            chords = if (chords.isEmpty()) listOf("A", "D") else chords
+            chords = if (chords.isEmpty()) listOf("A", "D") else chords,
+            error = null
         )
 
         countDownTimer = object : CountDownTimer(durationSeconds * 1000L, 1000L) {
@@ -60,7 +66,18 @@ class SessionRepositoryImpl @Inject constructor(
         // Start listening on the long-lived ApplicationScope so it is not tied to any ViewModel
         audioJob = appScope.launch {
             audioDetector.detectStrums(sensitivity, debounceMs)
-                .catch { e -> e.printStackTrace() }
+                .catch { e ->
+                    Log.e(TAG, "Audio detection failure: ${e.message}", e)
+                    countDownTimer?.cancel()
+                    countDownTimer = null
+                    val sessionError = when (e) {
+                        is AudioDetectionException.PermissionDenied -> SessionError.MicrophonePermissionDenied
+                        is AudioDetectionException.MicrophoneUnavailable -> SessionError.MicrophoneUnavailable
+                        is AudioDetectionException.RecordingFailed -> SessionError.RecordingFailed
+                        else -> SessionError.RecordingFailed
+                    }
+                    _sessionFlow.update { it.copy(isRunning = false, error = sessionError) }
+                }
                 .collect {
                     if (_sessionFlow.value.isRunning) {
                         _sessionFlow.update { it.copy(transitionCount = it.transitionCount + 1) }
@@ -74,13 +91,17 @@ class SessionRepositoryImpl @Inject constructor(
         countDownTimer = null
         audioJob?.cancel()
         audioJob = null
-        _sessionFlow.update { it.copy(isRunning = false, isFinished = false) }
+        _sessionFlow.update { it.copy(isRunning = false, isFinished = false, error = null) }
     }
 
     override suspend fun registerTransition() {
         if (_sessionFlow.value.isRunning) {
             _sessionFlow.update { it.copy(transitionCount = it.transitionCount + 1) }
         }
+    }
+
+    override suspend fun clearSessionError() {
+        _sessionFlow.update { it.copy(error = null) }
     }
 
     override suspend fun getPreferredDuration(): Int = preferencesDataSource.getDuration()

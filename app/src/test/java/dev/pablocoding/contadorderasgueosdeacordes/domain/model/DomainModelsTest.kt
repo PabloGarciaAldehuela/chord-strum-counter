@@ -2,6 +2,7 @@ package dev.pablocoding.contadorderasgueosdeacordes.domain.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,17 +17,20 @@ class DomainModelsTest {
         assertFalse(defaultSession.isFinished)
         assertEquals(60, defaultSession.remainingSeconds)
         assertEquals(listOf("A", "D"), defaultSession.chords)
+        assertNull(defaultSession.error)
 
         val updated = defaultSession.copy(
             transitionCount = 15,
             isRunning = true,
             remainingSeconds = 45,
-            chords = listOf("C", "G")
+            chords = listOf("C", "G"),
+            error = SessionError.MicrophoneUnavailable
         )
         assertEquals(15, updated.transitionCount)
         assertTrue(updated.isRunning)
         assertEquals(45, updated.remainingSeconds)
         assertEquals(listOf("C", "G"), updated.chords)
+        assertEquals(SessionError.MicrophoneUnavailable, updated.error)
     }
 
     @Test
