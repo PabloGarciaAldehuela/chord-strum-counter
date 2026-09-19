@@ -16,17 +16,20 @@ class DomainModelsTest {
         assertFalse(defaultSession.isFinished)
         assertEquals(60, defaultSession.remainingSeconds)
         assertEquals(listOf("A", "D"), defaultSession.chords)
+        org.junit.Assert.assertNull(defaultSession.error)
 
         val updated = defaultSession.copy(
             transitionCount = 15,
             isRunning = true,
             remainingSeconds = 45,
-            chords = listOf("C", "G")
+            chords = listOf("C", "G"),
+            error = SessionError.MicrophoneUnavailable
         )
         assertEquals(15, updated.transitionCount)
         assertTrue(updated.isRunning)
         assertEquals(45, updated.remainingSeconds)
         assertEquals(listOf("C", "G"), updated.chords)
+        assertEquals(SessionError.MicrophoneUnavailable, updated.error)
     }
 
     @Test

@@ -103,4 +103,11 @@ class SessionUseCasesTest {
         updateSelectedChordsUseCase(emptyList())
         coVerify { repository.savePreferredChords(listOf("A", "D")) }
     }
+
+    @Test
+    fun `ClearSessionErrorUseCase invokes repository clearSessionError`() = runTest {
+        val clearUseCase = ClearSessionErrorUseCase(repository)
+        clearUseCase()
+        coVerify(exactly = 1) { repository.clearSessionError() }
+    }
 }

@@ -7,6 +7,8 @@ import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.UserPracticeStats
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError
+import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.ClearSessionErrorUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetChordLibraryUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetMetronomeStateUseCase
 import dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.GetPracticeStatsUseCase
@@ -33,6 +35,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -59,6 +62,7 @@ class CounterViewModelTest {
     private val updateSelectedChords: UpdateSelectedChordsUseCase = mockk(relaxed = true)
     private val getChordLibrary: GetChordLibraryUseCase = mockk(relaxed = true)
     private val getMetronomeState: GetMetronomeStateUseCase = mockk(relaxed = true)
+    private val clearSessionError: ClearSessionErrorUseCase = mockk(relaxed = true)
 
     private val sessionFlow = MutableStateFlow(Session())
     private val metronomeStateFlow = MutableStateFlow(MetronomeState(bpm = 80))
@@ -90,7 +94,8 @@ class CounterViewModelTest {
         getSelectedChords = getSelectedChords,
         updateSelectedChords = updateSelectedChords,
         getChordLibrary = getChordLibrary,
-        getMetronomeState = getMetronomeState
+        getMetronomeState = getMetronomeState,
+        clearSessionError = clearSessionError
     )
 
     @Test
@@ -339,5 +344,74 @@ class CounterViewModelTest {
 
         val result = viewModel.getChord("Em")
         assertEquals(mockChord, result)
+    }
+
+    @Test
+    fun `session error state MicrophonePermissionDenied maps to permission error message in uiState`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.uiState.test {
+            val initial = awaitItem()
+            assertNull(initial.errorMessage)
+
+            sessionFlow.value = Session(
+                isRunning = false,
+                error = SessionError.MicrophonePermissionDenied
+            )
+
+            val errorState = awaitItem()
+            assertEquals("Microphone permission is required to detect guitar strums.", errorState.errorMessage)
+            assertFalse(errorState.isRunning)
+        }
+    }
+
+    @Test
+    fun `session error state MicrophoneUnavailable maps to hardware error message in uiState`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.uiState.test {
+            awaitItem()
+
+            sessionFlow.value = Session(
+                isRunning = false,
+                error = SessionError.MicrophoneUnavailable
+            )
+
+            val errorState = awaitItem()
+            assertEquals("Microphone hardware is unavailable or in use by another app.", errorState.errorMessage)
+        }
+    }
+
+    @Test
+    fun `session error state RecordingFailed maps to recording error message in uiState`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.uiState.test {
+            awaitItem()
+
+            sessionFlow.value = Session(
+                isRunning = false,
+                error = SessionError.RecordingFailed
+            )
+
+            val errorState = awaitItem()
+            assertEquals("Audio recording encountered an error. Please try again.", errorState.errorMessage)
+        }
+    }
+
+    @Test
+    fun `onDismissError delegates to ClearSessionErrorUseCase`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onDismissError()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { clearSessionError() }
+    }
+
+    @Test
+    fun `onStart clears session error before triggering startSession`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onStart()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { clearSessionError() }
+        coVerify(exactly = 1) { startSession(60, listOf("A", "D")) }
     }
 }

@@ -45,7 +45,8 @@ data class CounterUiState(
     val metronomeTempoName: String = "Andante",
     val selectedChords: List<String> = listOf("A", "D"),
     val lifetimeStrums: Long = 0,
-    val currentStreakDays: Int = 0
+    val currentStreakDays: Int = 0,
+    val errorMessage: String? = null
 )
 
 @HiltViewModel
@@ -64,7 +65,8 @@ class CounterViewModel @Inject constructor(
     private val getSelectedChords: GetSelectedChordsUseCase,
     private val updateSelectedChords: UpdateSelectedChordsUseCase,
     private val getChordLibrary: GetChordLibraryUseCase,
-    getMetronomeState: GetMetronomeStateUseCase
+    getMetronomeState: GetMetronomeStateUseCase,
+    private val clearSessionError: dev.pablocoding.contadorderasgueosdeacordes.domain.usecase.ClearSessionErrorUseCase
 ) : ViewModel() {
 
     private val _durationSeconds = MutableStateFlow(60)
@@ -91,6 +93,15 @@ class CounterViewModel @Inject constructor(
         getMetronomeState(),
         getPracticeStats()
     ) { session, settings, metronome, stats ->
+        val errorMsg = when (session.error) {
+            dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError.MicrophonePermissionDenied ->
+                "Microphone permission is required to detect guitar strums."
+            dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError.MicrophoneUnavailable ->
+                "Microphone hardware is unavailable or in use by another app."
+            dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionError.RecordingFailed ->
+                "Audio recording encountered an error. Please try again."
+            null -> null
+        }
         CounterUiState(
             transitionCount = session.transitionCount,
             remainingSeconds = session.remainingSeconds,
@@ -106,7 +117,8 @@ class CounterViewModel @Inject constructor(
             metronomeTempoName = metronome.tempoName,
             selectedChords = if (session.isRunning || session.isFinished) session.chords else settings.selectedChords,
             lifetimeStrums = stats.totalStrums,
-            currentStreakDays = stats.currentStreakDays
+            currentStreakDays = stats.currentStreakDays,
+            errorMessage = errorMsg
         )
     }.stateIn(
         scope = viewModelScope,
@@ -131,12 +143,19 @@ class CounterViewModel @Inject constructor(
     fun onStart() {
         viewModelScope.launch {
             _isPersonalBest.value = false
+            clearSessionError()
             startSession(_durationSeconds.value, _selectedChords.value)
         }
     }
 
     fun onStop() {
         viewModelScope.launch { stopSession() }
+    }
+
+    fun onDismissError() {
+        viewModelScope.launch {
+            clearSessionError()
+        }
     }
 
     fun onDurationChange(seconds: Int) {

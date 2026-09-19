@@ -58,7 +58,7 @@ class MetronomeEngine @Inject constructor(
             accentTrack = createStaticTrack(accentSamples)
             regularTrack = createStaticTrack(regularSamples)
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("MetronomeEngine", "Failed to initialize metronome audio tracks", e)
         }
     }
 
@@ -152,7 +152,7 @@ class MetronomeEngine @Inject constructor(
                 it.reloadStaticData()
                 it.play()
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("MetronomeEngine", "Error playing metronome click", e)
             }
         }
     }
