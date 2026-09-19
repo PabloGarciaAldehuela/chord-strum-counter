@@ -83,10 +83,7 @@ Generate JaCoCo code coverage reports:
 
 ---
 
-## How This Was Built (DRAFT)
-
-> [!NOTE]
-> DRAFT - Please review and edit before merging.
+## How This Was Built
 
 This application was developed using an AI-assisted engineering workflow:
 - UI design exploration and visual layout specifications were generated using Google Stitch (documented in `docs/STITCH_PROMPTS.md` and `docs/DESIGN_DOCUMENT.md`).
