@@ -44,4 +44,67 @@ class SessionMapperTest {
         assertEquals(88, entity.transitionCount)
         assertEquals("C,G,Am,F", entity.chords)
     }
+
+    @Test
+    fun `SessionResultEntity toDomain defaults to A and D when chords string is blank or commas only`() {
+        val blankEntity = SessionResultEntity(
+            id = 1L,
+            timestamp = 1000L,
+            durationSeconds = 60,
+            transitionCount = 10,
+            chords = ""
+        )
+        assertEquals(listOf("A", "D"), blankEntity.toDomain().chords)
+
+        val whitespaceEntity = SessionResultEntity(
+            id = 2L,
+            timestamp = 1000L,
+            durationSeconds = 60,
+            transitionCount = 10,
+            chords = "   "
+        )
+        assertEquals(listOf("A", "D"), whitespaceEntity.toDomain().chords)
+
+        val commasEntity = SessionResultEntity(
+            id = 3L,
+            timestamp = 1000L,
+            durationSeconds = 60,
+            transitionCount = 10,
+            chords = " , , "
+        )
+        assertEquals(listOf("A", "D"), commasEntity.toDomain().chords)
+    }
+
+    @Test
+    fun `SessionResultEntity toDomain trims whitespace from chords`() {
+        val messyEntity = SessionResultEntity(
+            id = 1L,
+            timestamp = 1000L,
+            durationSeconds = 60,
+            transitionCount = 10,
+            chords = "  A ,  D  , Em  "
+        )
+        assertEquals(listOf("A", "D", "Em"), messyEntity.toDomain().chords)
+    }
+
+    @Test
+    fun `SessionResult toEntity filters out blank entries and handles empty list`() {
+        val emptyChordsResult = SessionResult(
+            id = 1L,
+            timestamp = 1000L,
+            durationSeconds = 60,
+            transitionCount = 10,
+            chords = emptyList()
+        )
+        assertEquals("", emptyChordsResult.toEntity().chords)
+
+        val blanksResult = SessionResult(
+            id = 2L,
+            timestamp = 1000L,
+            durationSeconds = 60,
+            transitionCount = 10,
+            chords = listOf("A", " ", "", "D")
+        )
+        assertEquals("A,D", blanksResult.toEntity().chords)
+    }
 }

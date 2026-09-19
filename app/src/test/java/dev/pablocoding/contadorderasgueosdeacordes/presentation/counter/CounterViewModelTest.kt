@@ -1,6 +1,7 @@
 package dev.pablocoding.contadorderasgueosdeacordes.presentation.counter
 
 import app.cash.turbine.test
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.MetronomeState
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Session
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.SessionResult
@@ -31,6 +32,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -233,5 +235,109 @@ class CounterViewModelTest {
         }
 
         coVerify { saveSessionResult(match { it.transitionCount == 35 && it.chords == listOf("A", "D", "E") }) }
+    }
+
+    @Test
+    fun `session finish with lower count than previous best sets isPersonalBest to false`() = runTest {
+        val pastHistory = listOf(
+            SessionResult(id = 1, timestamp = 100L, durationSeconds = 60, transitionCount = 55, chords = listOf("A", "D"))
+        )
+        every { getSessionHistory() } returns flowOf(pastHistory)
+
+        val viewModel = createViewModel()
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            sessionFlow.value = Session(
+                durationSeconds = 60,
+                transitionCount = 40,
+                isRunning = false,
+                isFinished = true,
+                remainingSeconds = 0,
+                chords = listOf("A", "D")
+            )
+
+            advanceUntilIdle()
+
+            val finishedState = expectMostRecentItem()
+            assertEquals(40, finishedState.transitionCount)
+            assertEquals(true, finishedState.isFinished)
+            assertFalse(finishedState.isPersonalBest)
+        }
+    }
+
+    @Test
+    fun `session finish calculates personal best strictly for matching progression`() = runTest {
+        // High score on [A, D], but we are practicing [C, G] which has no prior history
+        val pastHistory = listOf(
+            SessionResult(id = 1, timestamp = 100L, durationSeconds = 60, transitionCount = 90, chords = listOf("A", "D"))
+        )
+        every { getSessionHistory() } returns flowOf(pastHistory)
+
+        val viewModel = createViewModel()
+
+        viewModel.uiState.test {
+            awaitItem()
+
+            sessionFlow.value = Session(
+                durationSeconds = 60,
+                transitionCount = 20,
+                isRunning = false,
+                isFinished = true,
+                remainingSeconds = 0,
+                chords = listOf("C", "G")
+            )
+
+            advanceUntilIdle()
+
+            val finishedState = expectMostRecentItem()
+            assertEquals(20, finishedState.transitionCount)
+            assertEquals(true, finishedState.isFinished)
+            // Even though 20 < 90, for [C, G] it is the new PB!
+            assertTrue(finishedState.isPersonalBest)
+        }
+    }
+
+    @Test
+    fun `onMetronomeBpmStep clamps at 40 and 240 limits`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.uiState.test {
+            awaitItem()
+
+            // Step down beyond 40
+            viewModel.onMetronomeBpmStep(-100)
+            coVerify { updateMetronomeBpm(40) }
+
+            // Step up beyond 240
+            viewModel.onMetronomeBpmStep(300)
+            coVerify { updateMetronomeBpm(240) }
+        }
+    }
+
+    @Test
+    fun `onChordsChange with empty list defaults to A and D`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.onChordsChange(listOf("C", "G"))
+            val custom = awaitItem()
+            assertEquals(listOf("C", "G"), custom.selectedChords)
+
+            viewModel.onChordsChange(emptyList())
+            val updated = awaitItem()
+            assertEquals(listOf("A", "D"), updated.selectedChords)
+        }
+        coVerify { updateSelectedChords(listOf("A", "D")) }
+    }
+
+    @Test
+    fun `getChord delegates to GetChordLibraryUseCase`() {
+        val viewModel = createViewModel()
+        val mockChord = Chord("Em", "E Minor", listOf(0, 2, 2, 0, 0, 0))
+        every { getChordLibrary.getChord("Em") } returns mockChord
+
+        val result = viewModel.getChord("Em")
+        assertEquals(mockChord, result)
     }
 }

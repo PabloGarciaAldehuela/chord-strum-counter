@@ -15,9 +15,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.PI
-import kotlin.math.exp
-import kotlin.math.sin
 
 private const val SAMPLE_RATE = 44100
 
@@ -45,8 +42,18 @@ class MetronomeEngine @Inject constructor(
 
     private fun initAudioTracks() {
         try {
-            val accentSamples = generateClickPcm(frequencyHz = 1600.0, durationMs = 25, decay = 80.0)
-            val regularSamples = generateClickPcm(frequencyHz = 1050.0, durationMs = 18, decay = 110.0)
+            val accentSamples = MetronomeAudioMath.generateClickPcm(
+                sampleRate = SAMPLE_RATE,
+                frequencyHz = 1600.0,
+                durationMs = 25,
+                decay = 80.0
+            )
+            val regularSamples = MetronomeAudioMath.generateClickPcm(
+                sampleRate = SAMPLE_RATE,
+                frequencyHz = 1050.0,
+                durationMs = 18,
+                decay = 110.0
+            )
 
             accentTrack = createStaticTrack(accentSamples)
             regularTrack = createStaticTrack(regularSamples)
@@ -76,23 +83,6 @@ class MetronomeEngine @Inject constructor(
 
         track.write(samples, 0, samples.size)
         return track
-    }
-
-    /**
-     * Procedurally synthesizes a pleasant woodblock-style click with an exponential decay envelope.
-     */
-    private fun generateClickPcm(frequencyHz: Double, durationMs: Int, decay: Double): ShortArray {
-        val numSamples = (SAMPLE_RATE * (durationMs / 1000.0)).toInt()
-        val buffer = ShortArray(numSamples)
-        val maxAmp = 28000.0 // Near max 16-bit without clipping
-
-        for (i in 0 until numSamples) {
-            val t = i.toDouble() / SAMPLE_RATE
-            val envelope = exp(-decay * t)
-            val sample = sin(2.0 * PI * frequencyHz * t) * envelope * maxAmp
-            buffer[i] = sample.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
-        }
-        return buffer
     }
 
     fun start(bpm: Int = currentBpm, beats: Int = beatsPerMeasure) {

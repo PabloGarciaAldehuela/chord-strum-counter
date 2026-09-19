@@ -11,15 +11,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.sqrt
 
 private const val SAMPLE_RATE = 44100
-
-// RMS amplitude thresholds on a 16-bit PCM scale (max = 32767)
-// sensitivity 1.0f = very sensitive (triggers on quiet strums)
-// sensitivity 0.0f = least sensitive (only loud strums trigger)
-private const val THRESHOLD_QUIET = 400.0   // high sensitivity end
-private const val THRESHOLD_LOUD  = 6000.0  // low sensitivity end
 
 @Singleton
 class AudioDetector @Inject constructor() {
@@ -38,22 +31,25 @@ class AudioDetector @Inject constructor() {
         )
         val bufferSize = maxOf(minBuffer, 2048)
 
-        val audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            bufferSize
-        )
+        val audioRecord = try {
+            AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+            return@flow
+        }
 
         if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
             audioRecord.release()
             return@flow
         }
 
-        // Map sensitivity [0,1] → threshold [LOUD, QUIET] (inverse relationship)
-        val threshold = THRESHOLD_LOUD - (sensitivity.coerceIn(0f, 1f) * (THRESHOLD_LOUD - THRESHOLD_QUIET))
-
+        val threshold = AudioDetectionMath.calculateThreshold(sensitivity)
         var lastDetectionTime = 0L
         val buffer = ShortArray(bufferSize)
 
@@ -62,9 +58,9 @@ class AudioDetector @Inject constructor() {
             while (currentCoroutineContext().isActive) {
                 val read = audioRecord.read(buffer, 0, bufferSize)
                 if (read > 0) {
-                    val rms = rms(buffer, read)
+                    val rms = AudioDetectionMath.calculateRms(buffer, read)
                     val now = System.currentTimeMillis()
-                    if (rms > threshold && now - lastDetectionTime > debounceMs) {
+                    if (AudioDetectionMath.shouldTriggerStrum(rms, threshold, now, lastDetectionTime, debounceMs)) {
                         lastDetectionTime = now
                         emit(Unit)
                     }
@@ -82,12 +78,5 @@ class AudioDetector @Inject constructor() {
             audioRecord.release()
         }
     }.flowOn(Dispatchers.IO)
-
-    private fun rms(buffer: ShortArray, read: Int): Double {
-        var sum = 0.0
-        for (i in 0 until read) {
-            sum += buffer[i].toDouble() * buffer[i].toDouble()
-        }
-        return sqrt(sum / read)
-    }
 }
+
