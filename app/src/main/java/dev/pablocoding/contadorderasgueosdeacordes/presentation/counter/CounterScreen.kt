@@ -1,9 +1,7 @@
 package dev.pablocoding.contadorderasgueosdeacordes.presentation.counter
 
 import android.Manifest
-import android.app.Activity
 import android.content.pm.PackageManager
-import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -81,7 +79,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -105,12 +102,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordDiagramSheet
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordSelectionSheet
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.KeepScreenOn
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.TuningForkIcon
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CounterScreen(
     onNavigateToHistory: () -> Unit,
+    onNavigateToTuner: () -> Unit,
     viewModel: CounterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -157,12 +157,7 @@ fun CounterScreen(
     }
 
     // Screen always-on while running
-    DisposableEffect(uiState.isRunning) {
-        val window = (context as Activity).window
-        if (uiState.isRunning) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
-    }
+    KeepScreenOn(enabled = uiState.isRunning)
 
     // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -231,24 +226,43 @@ fun CounterScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    // Tuner and settings are hidden during a session: the tuner would compete
+                    // with strum detection for the microphone.
                     if (!uiState.isRunning && !uiState.isFinished) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            modifier = Modifier.size(44.dp)
-                        ) {
-                            IconButton(onClick = { showSettingsSheet = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = "Settings",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(22.dp)
-                                )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                IconButton(onClick = onNavigateToTuner) {
+                                    Icon(
+                                        imageVector = TuningForkIcon,
+                                        contentDescription = "Open Tuner",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                IconButton(onClick = { showSettingsSheet = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = "Settings",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
                         }
                     } else {
-                        Spacer(modifier = Modifier.size(44.dp))
+                        Spacer(modifier = Modifier.width(96.dp))
                     }
                 }
 

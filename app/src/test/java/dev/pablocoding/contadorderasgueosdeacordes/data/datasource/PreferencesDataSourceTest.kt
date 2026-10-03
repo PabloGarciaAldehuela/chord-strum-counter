@@ -1,6 +1,13 @@
 package dev.pablocoding.contadorderasgueosdeacordes.data.datasource
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.NoteNaming
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerSettings
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerReadingMode
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerTolerance
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -21,10 +28,11 @@ class PreferencesDataSourceTest {
     private val testScope = TestScope(testDispatcher)
 
     private lateinit var preferencesDataSource: PreferencesDataSource
+    private lateinit var testDataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>
 
     @Before
     fun setUp() {
-        val testDataStore = PreferenceDataStoreFactory.create(
+        testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
             produceFile = { tempFolder.newFile("test_preferences.preferences_pb") }
         )
@@ -84,5 +92,44 @@ class PreferencesDataSourceTest {
     fun `saves and retrieves custom chords filtering empty and whitespace`() = runTest(testDispatcher) {
         preferencesDataSource.saveChords(listOf("C", "  ", "G", "", "Am"))
         assertEquals(listOf("C", "G", "Am"), preferencesDataSource.getChords())
+    }
+
+    @Test
+    fun `returns default tuner settings with the provided note naming`() = runTest(testDispatcher) {
+        assertEquals(TunerSettings(), preferencesDataSource.getTunerSettings())
+        assertEquals(
+            TunerSettings(noteNaming = NoteNaming.SOLFEGE),
+            preferencesDataSource.getTunerSettings(defaultNoteNaming = NoteNaming.SOLFEGE)
+        )
+    }
+
+    @Test
+    fun `saves and retrieves tuner settings`() = runTest(testDispatcher) {
+        val custom = TunerSettings(
+            tuningId = "drop_d",
+            referencePitchHz = 442,
+            inTuneSound = false,
+            leftHanded = true,
+            noteNaming = NoteNaming.SOLFEGE,
+            tolerance = TunerTolerance.STRICT,
+            readingMode = TunerReadingMode.STEADY
+        )
+        preferencesDataSource.saveTunerSettings(custom)
+        assertEquals(custom, preferencesDataSource.getTunerSettings(defaultNoteNaming = NoteNaming.LETTERS))
+    }
+
+    @Test
+    fun `corrupt tuner values fall back to safe defaults`() = runTest(testDispatcher) {
+        testDataStore.edit {
+            it[intPreferencesKey("tuner_reference_pitch_hz")] = 1000
+            it[stringPreferencesKey("tuner_tolerance")] = "UNKNOWN"
+            it[stringPreferencesKey("tuner_note_naming")] = "UNKNOWN"
+            it[stringPreferencesKey("tuner_reading_mode")] = "UNKNOWN"
+        }
+        val settings = preferencesDataSource.getTunerSettings()
+        assertEquals(TunerSettings.MAX_REFERENCE_PITCH_HZ, settings.referencePitchHz)
+        assertEquals(TunerTolerance.NORMAL, settings.tolerance)
+        assertEquals(NoteNaming.LETTERS, settings.noteNaming)
+        assertEquals(TunerReadingMode.LIVE, settings.readingMode)
     }
 }
