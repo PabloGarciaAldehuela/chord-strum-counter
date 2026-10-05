@@ -42,23 +42,34 @@ import androidx.compose.ui.unit.dp
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.ChordLibrary
 
+object ChordSelectionPresets {
+    val defaultPresets: List<Pair<String, List<String>>> = listOf(
+        "A ⇄ D" to listOf("A", "D"),
+        "A ⇄ D ⇄ E" to listOf("A", "D", "E"),
+        "C ⇄ G ⇄ Am" to listOf("C", "G", "Am"),
+        "Em ⇄ Am" to listOf("Em", "Am"),
+        "Am ⇄ Dm" to listOf("Am", "Dm"),
+        "A ⇄ E" to listOf("A", "E"),
+        "D ⇄ E" to listOf("D", "E"),
+        "Am ⇄ E" to listOf("Am", "E"),
+        "Em ⇄ D" to listOf("Em", "D"),
+        "Am ⇄ Em" to listOf("Am", "Em"),
+        "Am ⇄ C" to listOf("Am", "C"),
+        "C ⇄ Em" to listOf("C", "Em")
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ChordSelectionSheet(
     selectedChords: List<String>,
     onChordsSelected: (List<String>) -> Unit,
     onViewChordDiagram: (Chord) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    presets: List<Pair<String, List<String>>> = ChordSelectionPresets.defaultPresets
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var currentSelection by remember { mutableStateOf(selectedChords.toMutableList()) }
-
-    val presets = listOf(
-        "A ⇄ D" to listOf("A", "D"),
-        "A ⇄ D ⇄ E" to listOf("A", "D", "E"),
-        "C ⇄ G ⇄ Am" to listOf("C", "G", "Am"),
-        "Em ⇄ Am" to listOf("Em", "Am")
-    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
