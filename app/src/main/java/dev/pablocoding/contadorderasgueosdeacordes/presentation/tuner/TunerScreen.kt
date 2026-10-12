@@ -2,6 +2,8 @@ package dev.pablocoding.contadorderasgueosdeacordes.presentation.tuner
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -109,7 +111,7 @@ fun TunerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val activity = context as Activity
+    val activity = context.findActivity()
     val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -132,7 +134,7 @@ fun TunerScreen(
         if (!granted && !permissionRequested) permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
     val permanentlyDenied = permissionRequested && !uiState.hasMicPermission &&
-        !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
+        activity?.let { !ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.RECORD_AUDIO) } ?: false
     val onRequestPermission = {
         if (permanentlyDenied) {
             context.startActivity(
@@ -752,4 +754,13 @@ private fun BottomBar(uiState: TunerUiState, onOpenSettings: () -> Unit) {
             }
         }
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var current = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
 }

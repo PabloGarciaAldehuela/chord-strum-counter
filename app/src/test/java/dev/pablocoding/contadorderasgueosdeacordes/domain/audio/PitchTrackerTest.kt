@@ -143,4 +143,31 @@ class PitchTrackerTest {
             assertTrue("noise at $amplitude produced a pitch", samples.all { it.frequencyHz == null })
         }
     }
+
+    @Test
+    fun `severely flat string in manual mode is tracked and reported accurately`() {
+        val targets = listOf(82.41, 110.0, 146.83, 196.0, 246.94, 329.63)
+        // Manual mode: locked to Low E (index 0). String is 150 cents flat (~75.5 Hz).
+        val ctx = TunerAnalysisContext(targetsHz = targets, lockedIndex = 0)
+        val tracker = PitchTracker(sampleRate, context = ctx)
+        val flatLowE = SyntheticSignals.withCents(82.41, -150.0)
+        val samples = stream(tracker, pluck(flatLowE, seconds = 1.5))
+        val stable = samples.filter { it.frequencyHz != null && !it.isHolding }
+        assertTrue("Severely flat string in manual mode must be tracked, got ${stable.size} samples", stable.size > 15)
+        val error = SyntheticSignals.cents(stable.last().frequencyHz!!, flatLowE)
+        assertTrue("Error should be <= 1.0 cent, was $error", abs(error) <= 1.0)
+    }
+
+    @Test
+    fun `string 120 cents flat in auto mode is identified and tracked`() {
+        val targets = listOf(82.41, 110.0, 146.83, 196.0, 246.94, 329.63)
+        val ctx = TunerAnalysisContext(targetsHz = targets, lockedIndex = null)
+        val tracker = PitchTracker(sampleRate, context = ctx)
+        val flatA = SyntheticSignals.withCents(110.0, -120.0)
+        val samples = stream(tracker, pluck(flatA, seconds = 1.5))
+        val stable = samples.filter { it.frequencyHz != null && !it.isHolding }
+        assertTrue("Flat string in auto mode must be tracked, got ${stable.size} samples", stable.size > 15)
+        val error = SyntheticSignals.cents(stable.last().frequencyHz!!, flatA)
+        assertTrue("Error should be <= 1.0 cent, was $error", abs(error) <= 1.0)
+    }
 }

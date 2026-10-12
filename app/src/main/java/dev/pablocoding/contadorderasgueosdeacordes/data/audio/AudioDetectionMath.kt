@@ -26,6 +26,7 @@ object AudioDetectionMath {
 
     /**
      * Determines whether the current audio frame constitutes a detected strum.
+     * Legacy signature without onset comparison.
      */
     fun shouldTriggerStrum(
         rms: Double,
@@ -35,5 +36,24 @@ object AudioDetectionMath {
         debounceMs: Long
     ): Boolean {
         return rms > threshold && (nowMs - lastDetectionTimeMs) > debounceMs
+    }
+
+    /**
+     * Determines whether the current audio frame constitutes a detected strum,
+     * including volume onset rise comparison over the pre-onset baseline.
+     */
+    fun shouldTriggerStrum(
+        rms: Double,
+        threshold: Double,
+        nowMs: Long,
+        lastDetectionTimeMs: Long,
+        debounceMs: Long,
+        baselineRms: Double?,
+        onsetRatio: Double = StrumDetector.DEFAULT_ONSET_RATIO
+    ): Boolean {
+        val isLoudEnough = rms > threshold
+        val isDebounced = lastDetectionTimeMs == 0L || (nowMs - lastDetectionTimeMs) > debounceMs
+        val isOnset = baselineRms == null || rms >= baselineRms * onsetRatio
+        return isLoudEnough && isDebounced && isOnset
     }
 }

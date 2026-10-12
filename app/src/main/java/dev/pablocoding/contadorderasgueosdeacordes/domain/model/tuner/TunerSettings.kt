@@ -45,7 +45,7 @@ data class TunerSettings(
     val leftHanded: Boolean = false,
     val noteNaming: NoteNaming = NoteNaming.LETTERS,
     val tolerance: TunerTolerance = TunerTolerance.NORMAL,
-    val readingMode: TunerReadingMode = TunerReadingMode.LIVE
+    val readingMode: TunerReadingMode = TunerReadingMode.STEADY
 ) {
     companion object {
         const val MIN_REFERENCE_PITCH_HZ = 430

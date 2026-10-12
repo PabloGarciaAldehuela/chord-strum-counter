@@ -130,6 +130,6 @@ class PreferencesDataSourceTest {
         assertEquals(TunerSettings.MAX_REFERENCE_PITCH_HZ, settings.referencePitchHz)
         assertEquals(TunerTolerance.NORMAL, settings.tolerance)
         assertEquals(NoteNaming.LETTERS, settings.noteNaming)
-        assertEquals(TunerReadingMode.LIVE, settings.readingMode)
+        assertEquals(TunerReadingMode.STEADY, settings.readingMode)
     }
 }

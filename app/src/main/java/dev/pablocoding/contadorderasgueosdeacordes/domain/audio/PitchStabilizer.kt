@@ -57,7 +57,7 @@ data class PitchSample(
  * - **Decay hold** keeps the last value for [holdMs] so the display doesn't flicker.
  */
 class PitchStabilizer(
-    private val minConfidence: Double = 0.85,
+    private val minConfidence: Double = 0.80,
     private val gateRatio: Double = 2.8,
     private val releaseRatio: Double = 1.6,
     private val absoluteGate: Double = 0.0001,
@@ -82,14 +82,14 @@ class PitchStabilizer(
      * real low E: 15–20¢ over 2 s), so following the whole decay makes the needle wander and
      * disagree with conventional tuners, which read the note as it sounds when played.
      */
-    private val anchorMs: Long = 900,
+    private val anchorMs: Long = 850,
     /**
      * Anchor readings are collected from here on: each reading looks back over its analysis window
      * (up to ~340 ms), so earlier ones still contain the sharp attack.
      */
-    private val anchorStartMs: Long = 400,
+    private val anchorStartMs: Long = 350,
     /** The anchor needs this many settled readings; if a mute interrupted the window, it waits for more. */
-    private val minAnchorSamples: Int = 12,
+    private val minAnchorSamples: Int = 10,
     /** Turning the peg sharp releases the anchor (natural decay only ever drifts flat). */
     private val releaseSharpCents: Double = 4.0,
     /** Drifting flat further than natural decay does releases the anchor too (peg turned down). */
@@ -178,7 +178,8 @@ class PitchStabilizer(
         val hasClick = transientLevel < 0 || transientLevel >= recentTransientMin * transientRatio
         val strongJump = level >= recentMin * strongOnsetRatio
         val gapOk = onsetCount == 0 || nowMs - noteStartMs >= minOnsetGapMs
-        if (signalPresent && levelJump && (hasClick || strongJump) && gapOk) {
+        val clearPitchPresent = !isNoteActive && estimate != null && estimate.clarity >= minConfidence && signalPresent
+        if ((signalPresent && levelJump && (hasClick || strongJump) && gapOk) || clearPitchPresent) {
             isNoteActive = true
             onsetCount++
             noteStartMs = nowMs

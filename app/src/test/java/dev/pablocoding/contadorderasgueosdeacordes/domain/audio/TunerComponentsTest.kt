@@ -27,6 +27,14 @@ class TunerComponentsTest {
     }
 
     @Test
+    fun `octave error on detuned string is corrected`() {
+        // A string tuned 120 cents flat (76.9 Hz for Low E = 82.41 Hz).
+        // Octave doubling error reads 153.8 Hz.
+        val resolved = OctaveResolver.resolve(153.8, standard) { 0.9 }
+        assertEquals(76.9, resolved, 0.1)
+    }
+
+    @Test
     fun `an alternative without periodicity support is not taken`() {
         val resolved = OctaveResolver.resolve(224.0, standard) { f -> if (f == 224.0) 0.95 else 0.2 }
         assertEquals(224.0, resolved, 1e-9)

@@ -69,19 +69,27 @@ object TunerReplay {
         return mask
     }
 
-    /** Reads a mono 32-bit float WAV as written by the app's diagnostics capture. */
+    /** Reads a mono 16-bit PCM or 32-bit float WAV. */
     fun readFloatWav(file: File): Pair<Int, FloatArray> {
         val bytes = file.readBytes()
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
         val sampleRate = buffer.getInt(24).takeIf { it > 0 } ?: 48_000
-        val count = (bytes.size - 44) / 4
+        val format = buffer.getShort(20).toInt()
+        val bitsPerSample = buffer.getShort(34).toInt()
         buffer.position(44)
-        return sampleRate to FloatArray(count) { buffer.float }
+        val samples = if (format == 1 && bitsPerSample == 16) {
+            val count = (bytes.size - 44) / 2
+            FloatArray(count) { buffer.short / 32768.0f }
+        } else {
+            val count = (bytes.size - 44) / 4
+            FloatArray(count) { buffer.float }
+        }
+        return sampleRate to samples
     }
 
     /** Local, git-ignored real-device captures (absent on CI and other machines). */
     fun capture(relativePath: String): File? {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
+        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
         while (dir != null) {
             val candidate = File(dir, "docs/tuner-investigation/captures/$relativePath")
             if (candidate.exists()) return candidate

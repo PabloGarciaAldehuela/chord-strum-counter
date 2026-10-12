@@ -39,10 +39,10 @@ class PitchTracker(
         /** Short-window clarity above which the long window isn't worth computing. */
         private const val CONFIDENT_CLARITY = 0.97
         /** MPM may stand alone (no harmonic confirmation) only above this clarity. */
-        private const val SOLO_CLARITY = 0.93
+        private const val SOLO_CLARITY = 0.88
         /** MPM leads the fused value when the harmonic analysis confirms it, above this clarity. */
-        private const val ASSISTED_CLARITY = 0.93
-        private const val AGREE_CENTS = 1.5
+        private const val ASSISTED_CLARITY = 0.82
+        private const val AGREE_CENTS = 2.5
         private const val SPECTRAL_CONFIDENCE = 0.9
         private const val SPECTRAL_EVERY_HOPS = 2
         /** A string must gain this much harmonic score at the onset to count as "just plucked". */
@@ -52,10 +52,10 @@ class PitchTracker(
         private const val CONTINUITY_SHARE = 0.5
         private const val DOMINANT_SHARE = 0.7
         private const val CONTINUITY_DISPLAY_MS = 200L
-        private const val VOTE_START_MS = 80L
-        private const val VOTE_WINDOW_MS = 450L
-        private const val VOTE_CLARITY = 0.8
-        private const val VOTE_MAX_CENTS = 100.0
+        private const val VOTE_START_MS = 40L
+        private const val VOTE_WINDOW_MS = 350L
+        private const val VOTE_CLARITY = 0.72
+        private const val VOTE_MAX_CENTS = 120.0
         private const val LOCK_VOTES = 10.0
         private const val OVERRIDE_ANALYSES = 5
         private const val IDLE_BEFORE_LEARNING_MS = 2000L

@@ -191,4 +191,14 @@ class PitchStabilizerTest {
         assertFalse(s.isNoteActive)
         assertFalse(s.process(PitchEstimate(110.0, 0.95), 0.006, 5021, transientLevel = loudClick).isNoteActive)
     }
+
+    @Test
+    fun `finger or thumb pluck without click activates note`() {
+        val s = stabilizer(live = true)
+        s.feed(0, 1000, room, null)
+        // Gentle pluck: level is 0.002 (above floor * gateRatio = 0.0005 * 2.8 = 0.0014)
+        // No click at all: transientLevel = quietClick
+        s.process(PitchEstimate(110.0, 0.90), 0.002, 1000, transientLevel = quietClick)
+        assertTrue("Clear pitch above noise floor must activate note even without click", s.isNoteActive)
+    }
 }

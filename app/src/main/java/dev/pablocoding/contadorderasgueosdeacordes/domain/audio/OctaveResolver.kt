@@ -15,8 +15,8 @@ object OctaveResolver {
 
     /** An estimate this close to a string is trusted as-is. */
     const val TRUSTED_CENTS = 70.0
-    /** An alternative must land at least this close to a string. */
-    const val ALTERNATIVE_CENTS = 60.0
+    /** An alternative must land within 200 cents (2 semitones) of a string. */
+    const val ALTERNATIVE_CENTS = 200.0
     /** An alternative's periodicity must be at least this fraction of the original's. */
     const val MIN_RELATIVE_SUPPORT = 0.6
 
