@@ -19,6 +19,8 @@ object OctaveResolver {
     const val ALTERNATIVE_CENTS = 200.0
     /** An alternative's periodicity must be at least this fraction of the original's. */
     const val MIN_RELATIVE_SUPPORT = 0.6
+    /** Minimum improvement in cents required to switch to an alternative. */
+    const val MIN_IMPROVEMENT_CENTS = 0.01
 
     private val RATIOS = doubleArrayOf(0.5, 2.0, 1.0 / 3.0, 3.0)
 
@@ -35,7 +37,7 @@ object OctaveResolver {
         for (ratio in RATIOS) {
             val candidate = frequencyHz * ratio
             val distance = distanceToNearest(candidate, targetsHz)
-            if (distance <= ALTERNATIVE_CENTS && distance < bestDistance && support(candidate) >= MIN_RELATIVE_SUPPORT * reference) {
+            if (distance <= ALTERNATIVE_CENTS && distance < bestDistance - MIN_IMPROVEMENT_CENTS && support(candidate) >= MIN_RELATIVE_SUPPORT * reference) {
                 best = candidate
                 bestDistance = distance
             }
