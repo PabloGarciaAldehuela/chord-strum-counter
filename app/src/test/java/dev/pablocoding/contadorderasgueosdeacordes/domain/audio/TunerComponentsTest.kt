@@ -28,10 +28,19 @@ class TunerComponentsTest {
 
     @Test
     fun `octave error on detuned string is corrected`() {
-        // A string tuned 120 cents flat (76.9 Hz for Low E = 82.41 Hz).
-        // Octave doubling error reads 153.8 Hz.
+        // A string tuned 40 cents flat (80.5 Hz for Low E = 82.41 Hz).
+        // Octave doubling error reads 161.0 Hz.
+        val resolved = OctaveResolver.resolve(161.0, standard) { 0.9 }
+        assertEquals(80.5, resolved, 0.1)
+    }
+
+    @Test
+    fun `genuine detuning is not replaced by worse octave alternative`() {
+        // Clean D3 (146.83 Hz) played 80 cents sharp is 153.8 Hz.
+        // Even though 76.9 Hz is periodic and within 200 cents of Low E (82.41 Hz),
+        // 120 cents distance is worse than the original 80 cents, so it must not fold.
         val resolved = OctaveResolver.resolve(153.8, standard) { 0.9 }
-        assertEquals(76.9, resolved, 0.1)
+        assertEquals(153.8, resolved, 0.1)
     }
 
     @Test

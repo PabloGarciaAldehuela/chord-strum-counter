@@ -72,6 +72,20 @@ class TuningEvaluatorTest {
     }
 
     @Test
+    fun `held or unsettled samples reset pending in-tune timer`() {
+        val evaluator = TuningEvaluator()
+        // Single sample in tolerance at 1000 ms
+        val first = evaluator.evaluate(sample(196.0, 1000), standard, 440.0, null, 3.0)
+        assertFalse(first.isInTune)
+        // Held frames through 1400 ms
+        evaluator.evaluate(sample(196.0, 1200, holding = true), standard, 440.0, null, 3.0)
+        evaluator.evaluate(sample(196.0, 1400, holding = true), standard, 440.0, null, 3.0)
+        // Frame at 1420 ms must NOT immediately become in-tune because pending timer was reset
+        val afterHeld = evaluator.evaluate(sample(196.0, 1420), standard, 440.0, null, 3.0)
+        assertFalse(afterHeld.isInTune)
+    }
+
+    @Test
     fun `losing the signal resets the in-tune state`() {
         val evaluator = TuningEvaluator()
         (0..600L step 20).forEach { evaluator.evaluate(sample(196.0, it), standard, 440.0, null, 3.0) }

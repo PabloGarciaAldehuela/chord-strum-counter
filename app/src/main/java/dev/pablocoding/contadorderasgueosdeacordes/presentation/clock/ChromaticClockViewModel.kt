@@ -108,7 +108,9 @@ class ChromaticClockViewModel @Inject constructor(
     }
 
     fun playCurrentNote() {
-        playToneForPitchClass(_uiState.value.selectedPitchClass)
+        if (_uiState.value.isAudioEnabled) {
+            playToneForPitchClass(_uiState.value.selectedPitchClass)
+        }
     }
 
     private fun playToneForPitchClass(pitchClass: Int) {
@@ -117,5 +119,10 @@ class ChromaticClockViewModel @Inject constructor(
             val frequencyHz = PitchMath.midiToFrequency(note.baseMidi)
             playTunerSoundUseCase.referenceTone(frequencyHz)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        playTunerSoundUseCase.stop()
     }
 }

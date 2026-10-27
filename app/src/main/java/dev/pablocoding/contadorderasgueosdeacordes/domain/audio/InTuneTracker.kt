@@ -32,6 +32,14 @@ class InTuneTracker(
         return isInTune
     }
 
+    /**
+     * Resets the pending in-tune qualification timer while preserving an already-confirmed
+     * [isInTune] state.
+     */
+    fun resetPendingTimer() {
+        withinSinceMs = null
+    }
+
     fun reset() {
         isInTune = false
         withinSinceMs = null

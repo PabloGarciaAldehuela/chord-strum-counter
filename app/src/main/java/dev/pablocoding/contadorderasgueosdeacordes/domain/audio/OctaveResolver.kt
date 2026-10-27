@@ -27,10 +27,11 @@ object OctaveResolver {
      */
     fun resolve(frequencyHz: Double, targetsHz: List<Double>, support: (Double) -> Double): Double {
         if (targetsHz.isEmpty()) return frequencyHz
-        if (distanceToNearest(frequencyHz, targetsHz) <= TRUSTED_CENTS) return frequencyHz
+        val originalDistance = distanceToNearest(frequencyHz, targetsHz)
+        if (originalDistance <= TRUSTED_CENTS) return frequencyHz
         val reference = support(frequencyHz).coerceAtLeast(1e-9)
         var best = frequencyHz
-        var bestDistance = Double.MAX_VALUE
+        var bestDistance = originalDistance
         for (ratio in RATIOS) {
             val candidate = frequencyHz * ratio
             val distance = distanceToNearest(candidate, targetsHz)

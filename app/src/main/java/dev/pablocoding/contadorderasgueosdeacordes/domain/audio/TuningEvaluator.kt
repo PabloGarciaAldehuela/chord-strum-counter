@@ -67,9 +67,14 @@ class TuningEvaluator(
         val cents = PitchMath.cents(frequency, PitchMath.midiToFrequency(targetMidi, referencePitchHz))
         val wasInTune = inTuneTracker.isInTune
         // A held (decaying) value is frozen, and the attack glide is still sharp: keep the state
-        // without advancing the timer.
-        val isInTune = if (sample.isHolding || !sample.isSettled) wasInTune
-        else inTuneTracker.update(cents, sample.timestampMs, toleranceCents)
+        // without advancing the timer, and reset any pending timer so held/unsettled frames
+        // cannot bridge disconnected readings.
+        val isInTune = if (sample.isHolding || !sample.isSettled) {
+            inTuneTracker.resetPendingTimer()
+            wasInTune
+        } else {
+            inTuneTracker.update(cents, sample.timestampMs, toleranceCents)
+        }
 
         return TunerReading(
             frequencyHz = frequency,

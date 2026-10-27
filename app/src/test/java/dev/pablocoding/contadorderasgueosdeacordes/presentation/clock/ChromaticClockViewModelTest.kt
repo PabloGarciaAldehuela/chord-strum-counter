@@ -108,5 +108,20 @@ class ChromaticClockViewModelTest {
 
         viewModel.toggleAudio()
         assertFalse(viewModel.uiState.value.isAudioEnabled)
+
+        // When muted, playCurrentNote should not trigger audio playback
+        viewModel.playCurrentNote()
+        advanceUntilIdle()
+        coVerify(exactly = 0) { playTunerSoundUseCase.referenceTone(any()) }
+    }
+
+    @Test
+    fun playCurrentNotePlaysToneWhenAudioIsEnabled() = runTest {
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isAudioEnabled)
+
+        viewModel.playCurrentNote()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { playTunerSoundUseCase.referenceTone(any()) }
     }
 }

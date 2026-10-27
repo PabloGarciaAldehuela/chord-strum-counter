@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,15 +45,13 @@ class TunerRepositoryImpl @Inject constructor(
     private val _settings = MutableStateFlow(TunerSettings())
     override val settings: StateFlow<TunerSettings> = _settings.asStateFlow()
 
-    @Volatile
-    private var settingsChangedBeforeLoad = false
-
-    init {
-        appScope.launch {
-            val stored = preferencesDataSource.getTunerSettings(
-                defaultNoteNaming = NoteNaming.defaultForLanguage(Locale.getDefault().language)
-            )
-            if (!settingsChangedBeforeLoad) _settings.value = stored
+    private val settingsMutex = Mutex()
+    private val initialLoadJob = appScope.launch {
+        val stored = preferencesDataSource.getTunerSettings(
+            defaultNoteNaming = NoteNaming.defaultForLanguage(Locale.getDefault().language)
+        )
+        settingsMutex.withLock {
+            _settings.value = stored
         }
     }
 
@@ -91,8 +91,8 @@ class TunerRepositoryImpl @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun updateSettings(transform: (TunerSettings) -> TunerSettings) {
-        settingsChangedBeforeLoad = true
+    override suspend fun updateSettings(transform: (TunerSettings) -> TunerSettings) = settingsMutex.withLock {
+        initialLoadJob.join()
         _settings.update { current ->
             val next = transform(current)
             next.copy(

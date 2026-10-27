@@ -26,8 +26,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -158,13 +158,13 @@ fun ChromaticClockScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Navigation Tabs between Companion Learning Views
-                TabRow(
+                SecondaryTabRow(
                     selectedTabIndex = uiState.selectedTab,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     contentColor = AmberGold,
-                    indicator = { tabPositions ->
+                    indicator = {
                         TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[uiState.selectedTab]),
+                            Modifier.tabIndicatorOffset(uiState.selectedTab),
                             color = AmberGold,
                             height = 3.dp
                         )
