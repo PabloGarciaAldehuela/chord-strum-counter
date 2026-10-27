@@ -104,6 +104,7 @@ import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.Chord
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordSelectionSheet
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.KeepScreenOn
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.TuningForkIcon
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChromaticClockIcon
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,6 +112,7 @@ import kotlinx.coroutines.delay
 fun CounterScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToTuner: () -> Unit,
+    onNavigateToNoteClock: () -> Unit = {},
     viewModel: CounterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -226,10 +228,25 @@ fun CounterScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Tuner and settings are hidden during a session: the tuner would compete
+                    // Tuner, Clock and settings are hidden during a session: the tuner would compete
                     // with strum detection for the microphone.
                     if (!uiState.isRunning && !uiState.isFinished) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                IconButton(onClick = onNavigateToNoteClock) {
+                                    Icon(
+                                        imageVector = ChromaticClockIcon,
+                                        contentDescription = "The Note Clock",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -262,7 +279,7 @@ fun CounterScreen(
                             }
                         }
                     } else {
-                        Spacer(modifier = Modifier.width(96.dp))
+                        Spacer(modifier = Modifier.width(148.dp))
                     }
                 }
 

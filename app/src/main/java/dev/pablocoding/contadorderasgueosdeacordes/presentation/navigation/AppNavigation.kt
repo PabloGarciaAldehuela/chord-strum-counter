@@ -8,13 +8,14 @@ import androidx.navigation.compose.rememberNavController
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.counter.CounterScreen
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.history.HistoryScreen
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.tuner.TunerScreen
-
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.clock.ChromaticClockScreen
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.splash.SplashScreen
 
 private const val ROUTE_SPLASH = "splash"
 private const val ROUTE_COUNTER = "counter"
 private const val ROUTE_HISTORY = "history"
 private const val ROUTE_TUNER = "tuner"
+private const val ROUTE_NOTE_CLOCK = "note_clock"
 
 @Composable
 fun AppNavigation() {
@@ -36,7 +37,8 @@ fun AppNavigation() {
         composable(ROUTE_COUNTER) {
             CounterScreen(
                 onNavigateToHistory = { navController.navigate(ROUTE_HISTORY) },
-                onNavigateToTuner = { navController.navigate(ROUTE_TUNER) { launchSingleTop = true } }
+                onNavigateToTuner = { navController.navigate(ROUTE_TUNER) { launchSingleTop = true } },
+                onNavigateToNoteClock = { navController.navigate(ROUTE_NOTE_CLOCK) { launchSingleTop = true } }
             )
         }
         composable(ROUTE_HISTORY) {
@@ -46,6 +48,11 @@ fun AppNavigation() {
         }
         composable(ROUTE_TUNER) {
             TunerScreen(
+                onNavigateBack = dropUnlessResumed { navController.popBackStack() }
+            )
+        }
+        composable(ROUTE_NOTE_CLOCK) {
+            ChromaticClockScreen(
                 onNavigateBack = dropUnlessResumed { navController.popBackStack() }
             )
         }

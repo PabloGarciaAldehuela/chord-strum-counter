@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.NoteNotationMode
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.NoteNaming
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerSettings
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerReadingMode
@@ -131,5 +132,27 @@ class PreferencesDataSourceTest {
         assertEquals(TunerTolerance.NORMAL, settings.tolerance)
         assertEquals(NoteNaming.LETTERS, settings.noteNaming)
         assertEquals(TunerReadingMode.STEADY, settings.readingMode)
+    }
+
+    @Test
+    fun `returns default note clock notation when not set`() = runTest(testDispatcher) {
+        assertEquals(NoteNotationMode.DUAL, preferencesDataSource.getNoteClockNotation())
+    }
+
+    @Test
+    fun `saves and retrieves note clock notation`() = runTest(testDispatcher) {
+        preferencesDataSource.saveNoteClockNotation(NoteNotationMode.LETTERS)
+        assertEquals(NoteNotationMode.LETTERS, preferencesDataSource.getNoteClockNotation())
+
+        preferencesDataSource.saveNoteClockNotation(NoteNotationMode.SOLFEGE)
+        assertEquals(NoteNotationMode.SOLFEGE, preferencesDataSource.getNoteClockNotation())
+    }
+
+    @Test
+    fun `corrupt note clock notation falls back to default DUAL`() = runTest(testDispatcher) {
+        testDataStore.edit {
+            it[stringPreferencesKey("note_clock_notation_mode")] = "INVALID_MODE"
+        }
+        assertEquals(NoteNotationMode.DUAL, preferencesDataSource.getNoteClockNotation())
     }
 }

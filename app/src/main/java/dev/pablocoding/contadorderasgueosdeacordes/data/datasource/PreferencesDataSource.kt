@@ -11,6 +11,7 @@ import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.NoteNaming
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerSettings
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerReadingMode
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerTolerance
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.NoteNotationMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -29,6 +30,7 @@ private val TUNER_LEFT_HANDED_KEY    = booleanPreferencesKey("tuner_left_handed"
 private val TUNER_NOTE_NAMING_KEY    = stringPreferencesKey("tuner_note_naming")
 private val TUNER_TOLERANCE_KEY      = stringPreferencesKey("tuner_tolerance")
 private val TUNER_READING_MODE_KEY   = stringPreferencesKey("tuner_reading_mode")
+private val NOTE_CLOCK_NOTATION_KEY  = stringPreferencesKey("note_clock_notation_mode")
 
 private const val DEFAULT_DURATION      = 60
 private const val DEFAULT_SENSITIVITY   = 0.6f
@@ -112,5 +114,16 @@ class PreferencesDataSource @Inject constructor(
             it[TUNER_TOLERANCE_KEY] = settings.tolerance.name
             it[TUNER_READING_MODE_KEY] = settings.readingMode.name
         }
+    }
+
+    suspend fun getNoteClockNotation(): NoteNotationMode =
+        dataStore.data.map { prefs ->
+            prefs[NOTE_CLOCK_NOTATION_KEY]?.let { name ->
+                NoteNotationMode.entries.firstOrNull { it.name == name }
+            } ?: NoteNotationMode.DUAL
+        }.first()
+
+    suspend fun saveNoteClockNotation(mode: NoteNotationMode) {
+        dataStore.edit { it[NOTE_CLOCK_NOTATION_KEY] = mode.name }
     }
 }
