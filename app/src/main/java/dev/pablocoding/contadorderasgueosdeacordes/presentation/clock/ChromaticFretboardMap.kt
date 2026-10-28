@@ -283,8 +283,7 @@ private fun FretboardCanvas(
 
         // Draw Active Note Markers on Frets
         for (pos in fretPositions) {
-            val canvasRow = pos.stringNumber - 1
-            val sy = topPad + (5 - canvasRow) * stringSpacing
+            val sy = topPad + (pos.stringNumber - 1) * stringSpacing
 
             for (fret in pos.frets) {
                 val dotX = if (fret == 0) {

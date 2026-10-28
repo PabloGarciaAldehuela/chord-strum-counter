@@ -2,8 +2,6 @@ package dev.pablocoding.contadorderasgueosdeacordes.presentation.clock
 
 import android.graphics.Paint
 import android.graphics.Typeface
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -26,6 +24,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.ChromaticNote
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.ChromaticWheelData
@@ -60,12 +60,7 @@ fun ChromaticClockWheel(
     onCenterTapped: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val selectedAnimatedScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
-        label = "wheel_scale"
-    )
-
+    val selectedNote = ChromaticWheelData.NOTES[selectedPitchClass.coerceIn(0, 11)]
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
@@ -107,11 +102,39 @@ fun ChromaticClockWheel(
         }
     }
 
+    val paintHubPrimary = remember {
+        Paint().apply {
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+    }
+
+    val paintHubSecondary = remember {
+        Paint().apply {
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        }
+    }
+
+    val paintHubPlay = remember {
+        Paint().apply {
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            color = AmberGold.toArgb()
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .padding(8.dp),
+            .padding(8.dp)
+            .semantics {
+                contentDescription = "The Note Clock. Selected note: ${selectedNote.nameLetters} (${selectedNote.nameSolfege}). Tap notes on wheel to change, or tap center to play acoustic tone."
+            },
         contentAlignment = Alignment.Center
     ) {
         Canvas(
@@ -266,7 +289,10 @@ fun ChromaticClockWheel(
                 cx = cx,
                 cy = cy,
                 hubRadius = hubRadius,
-                textColor = onSurfaceColor.toArgb()
+                textColor = onSurfaceColor.toArgb(),
+                paintPrimary = paintHubPrimary,
+                paintSecondary = paintHubSecondary,
+                paintPlay = paintHubPlay
             )
         }
     }
@@ -477,33 +503,20 @@ private fun drawCenterHubText(
     cx: Float,
     cy: Float,
     hubRadius: Float,
-    textColor: Int
+    textColor: Int,
+    paintPrimary: Paint,
+    paintSecondary: Paint,
+    paintPlay: Paint
 ) {
     val scale = hubRadius / 70f
-    val paintPrimary = Paint().apply {
-        isAntiAlias = true
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        textSize = 21f * scale
-        color = textColor
-    }
+    paintPrimary.textSize = 21f * scale
+    paintPrimary.color = textColor
 
-    val paintSecondary = Paint().apply {
-        isAntiAlias = true
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-        textSize = 11.5f * scale
-        color = textColor
-        alpha = 190
-    }
+    paintSecondary.textSize = 11.5f * scale
+    paintSecondary.color = textColor
+    paintSecondary.alpha = 190
 
-    val paintPlay = Paint().apply {
-        isAntiAlias = true
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        textSize = 10f * scale
-        color = AmberGold.toArgb()
-    }
+    paintPlay.textSize = 10f * scale
 
     when (mode) {
         NoteNotationMode.LETTERS -> {

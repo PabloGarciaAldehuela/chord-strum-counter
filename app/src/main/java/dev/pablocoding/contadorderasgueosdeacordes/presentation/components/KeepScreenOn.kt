@@ -4,6 +4,7 @@ import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalView
+import java.util.WeakHashMap
 
 /**
  * Keeps the screen on while this composable is in composition and [enabled].
@@ -24,7 +25,7 @@ fun KeepScreenOn(enabled: Boolean = true) {
     }
 }
 
-private val requests = HashMap<View, Int>()
+private val requests = WeakHashMap<View, Int>()
 
 private fun acquire(root: View) {
     requests[root] = (requests[root] ?: 0) + 1
