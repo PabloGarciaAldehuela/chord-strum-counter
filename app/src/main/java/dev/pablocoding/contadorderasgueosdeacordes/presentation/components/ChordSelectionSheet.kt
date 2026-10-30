@@ -55,7 +55,10 @@ object ChordSelectionPresets {
         "Em ⇄ D" to listOf("Em", "D"),
         "Am ⇄ Em" to listOf("Am", "Em"),
         "Am ⇄ C" to listOf("Am", "C"),
-        "C ⇄ Em" to listOf("C", "Em")
+        "C ⇄ Em" to listOf("C", "Em"),
+        "Big G ⇄ Cadd9" to listOf("Big G", "Cadd9"),
+        "Em7 ⇄ Big G ⇄ Dadd11/F# ⇄ Cadd9" to listOf("Em7", "Big G", "Dadd11/F#", "Cadd9"),
+        "G5 ⇄ Cadd9 ⇄ Dsus4" to listOf("G5", "Cadd9", "Dsus4")
     )
 }
 

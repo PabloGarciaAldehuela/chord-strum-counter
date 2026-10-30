@@ -45,15 +45,17 @@ fun ChordDiagram(
     ) {
         Text(
             text = chord.name,
-            fontSize = 34.sp,
+            fontSize = if (chord.name.length > 7) 26.sp else 34.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = primaryColor
+            color = primaryColor,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = chord.fullName,
             style = MaterialTheme.typography.bodyMedium,
-            color = onSurfaceVariantColor
+            color = onSurfaceVariantColor,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))

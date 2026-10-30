@@ -60,4 +60,83 @@ class ChordLibraryTest {
             }
         }
     }
+
+    @Test
+    fun `stuck 3 and 4 chords exist and have strings 1 and 2 anchored on fret 3 with fingers 3 and 4`() {
+        val stuckChordNames = listOf(
+            "Big G",
+            "G5",
+            "Cadd9",
+            "Dsus4",
+            "A7sus4",
+            "A7sus4 (var)",
+            "Em7",
+            "Dadd11/F#",
+            "F6/9"
+        )
+        for (name in stuckChordNames) {
+            val chord = ChordLibrary.getChord(name)
+            assertNotNull("Chord $name must exist in ChordLibrary", chord)
+            assertEquals("String 2 (B) must be fret 3 for $name", 3, chord!!.frets[4])
+            assertEquals("String 1 (high e) must be fret 3 for $name", 3, chord.frets[5])
+            assertEquals("String 2 finger must be 3 for $name", 3, chord.fingers[4])
+            assertEquals("String 1 finger must be 4 for $name", 4, chord.fingers[5])
+        }
+    }
+
+    @Test
+    fun `getChord resolves common aliases and variations`() {
+        assertEquals("Cadd9", ChordLibrary.getChord("C add9")?.name)
+        assertEquals("Dsus4", ChordLibrary.getChord("D sus4")?.name)
+        assertEquals("A7sus4", ChordLibrary.getChord("A7 sus4")?.name)
+        assertEquals("A7sus4", ChordLibrary.getChord("A7 SUS 4")?.name)
+        assertEquals("A7sus4 (var)", ChordLibrary.getChord("A7sus4 (var)")?.name)
+        assertEquals("A7sus4 (var)", ChordLibrary.getChord("A7SUS4(VAR)")?.name)
+        assertEquals("A7sus4 (var)", ChordLibrary.getChord("A7sus4 (Open G)")?.name)
+        assertEquals("Em7", ChordLibrary.getChord("E min7")?.name)
+        assertEquals("Em7", ChordLibrary.getChord("Emin7")?.name)
+        assertEquals("Dadd11/F#", ChordLibrary.getChord("D add11/F#")?.name)
+        assertEquals("F6/9", ChordLibrary.getChord("F 6/9")?.name)
+        assertEquals("G5", ChordLibrary.getChord("Rock G")?.name)
+        assertEquals("Big G", ChordLibrary.getChord("Four Finger G")?.name)
+    }
+
+    @Test
+    fun `stuck 3 and 4 chord frets match course diagrams exactly`() {
+        val bigG = ChordLibrary.getChord("Big G")!!
+        assertEquals(listOf(3, 2, 0, 0, 3, 3), bigG.frets)
+        assertEquals(listOf(2, 1, 0, 0, 3, 4), bigG.fingers)
+
+        val g5 = ChordLibrary.getChord("G5")!!
+        assertEquals(listOf(3, -1, 0, 0, 3, 3), g5.frets)
+        assertEquals(listOf(2, 0, 0, 0, 3, 4), g5.fingers)
+
+        val cadd9 = ChordLibrary.getChord("Cadd9")!!
+        assertEquals(listOf(-1, 3, 2, 0, 3, 3), cadd9.frets)
+        assertEquals(listOf(0, 2, 1, 0, 3, 4), cadd9.fingers)
+
+        val dsus4 = ChordLibrary.getChord("Dsus4")!!
+        assertEquals(listOf(-1, -1, 0, 2, 3, 3), dsus4.frets)
+        assertEquals(listOf(0, 0, 0, 1, 3, 4), dsus4.fingers)
+
+        val a7sus4 = ChordLibrary.getChord("A7sus4")!!
+        assertEquals(listOf(-1, 0, 2, 2, 3, 3), a7sus4.frets)
+        assertEquals(listOf(0, 0, 1, 2, 3, 4), a7sus4.fingers)
+
+        val a7sus4Var = ChordLibrary.getChord("A7sus4 (var)")!!
+        assertEquals(listOf(-1, 0, 2, 0, 3, 3), a7sus4Var.frets)
+        assertEquals(listOf(0, 0, 1, 0, 3, 4), a7sus4Var.fingers)
+
+        val em7 = ChordLibrary.getChord("Em7")!!
+        assertEquals(listOf(0, 2, 2, 0, 3, 3), em7.frets)
+        assertEquals(listOf(0, 1, 2, 0, 3, 4), em7.fingers)
+
+        val dadd11 = ChordLibrary.getChord("Dadd11/F#")!!
+        assertEquals(listOf(2, -1, 0, 2, 3, 3), dadd11.frets)
+        assertEquals(listOf(1, 0, 0, 2, 3, 4), dadd11.fingers)
+
+        val f69 = ChordLibrary.getChord("F6/9")!!
+        assertEquals(listOf(-1, -1, 3, 2, 3, 3), f69.frets)
+        assertEquals(listOf(0, 0, 2, 1, 3, 4), f69.fingers)
+    }
 }
