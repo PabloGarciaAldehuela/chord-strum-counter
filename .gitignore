@@ -60,3 +60,7 @@ google-services.json
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Local planning docs (never commit)
+docs/*_PLAN.md
+docs/tuner-investigation/

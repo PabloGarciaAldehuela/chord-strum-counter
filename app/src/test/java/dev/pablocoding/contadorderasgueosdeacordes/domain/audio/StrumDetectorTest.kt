@@ -159,4 +159,132 @@ class StrumDetectorTest {
         assertEquals(300.0, StrumDetector.calculateRms(partialBuffer, 5), 0.001)
         assertEquals(sqrt(45000.0), StrumDetector.calculateRms(partialBuffer, 10), 0.01)
     }
+
+    @Test
+    fun `single strong strum with prolonged sustain registers only once`() {
+        val detector = StrumDetector(sensitivity = 0.6f, debounceMs = 350L)
+
+        fun bufferWithRms(targetRms: Short): ShortArray = ShortArray(512) { targetRms }
+
+        var strumCount = 0
+
+        // Silence before strum
+        val silence = bufferWithRms(100)
+        if (detector.process(silence, silence.size, nowMs = 1000L)) strumCount++
+
+        // Strum attack: huge jump to RMS 18000
+        val attack = bufferWithRms(18000)
+        if (detector.process(attack, attack.size, nowMs = 1046L)) strumCount++
+        assertEquals(1, strumCount)
+
+        // Exponential decay of strings over the next 1.5 seconds (buffers every ~46ms)
+        val decayLevels = listOf<Short>(
+            15000, 12000, 9500, 7500, 6000, 5000, 4200, // within debounce (< 350ms)
+            3600, 3200, 2900, 2700, 2500, 2200, 1800, 1400 // post-debounce sustain (still above threshold 2640 initially!)
+        )
+
+        var timeMs = 1046L + 46L
+        for (level in decayLevels) {
+            val sustainBuffer = bufferWithRms(level)
+            if (detector.process(sustainBuffer, sustainBuffer.size, nowMs = timeMs)) {
+                strumCount++
+            }
+            timeMs += 46L
+        }
+
+        // Even though post-debounce buffers (e.g. 3600, 3200, 2900, 2700) were > threshold (2640.0),
+        // volume-onset detection must recognize they are sustaining and NOT register additional strums.
+        assertEquals("Strong strum with long sustain must register exactly once", 1, strumCount)
+    }
+
+    @Test
+    fun `consecutive strums with intermediate sustain count accurately`() {
+        val detector = StrumDetector(sensitivity = 0.6f, debounceMs = 350L)
+        fun bufferWithRms(targetRms: Short): ShortArray = ShortArray(512) { targetRms }
+
+        var strumCount = 0
+
+        // Strum #1 at t = 1000ms
+        if (detector.process(bufferWithRms(18000), 512, nowMs = 1000L)) strumCount++
+        assertEquals(1, strumCount)
+
+        // Strings sustain and decay down to 3500 RMS
+        val sustainLevels = listOf<Short>(14000, 10000, 7000, 5000, 4200, 3800, 3500)
+        var time = 1046L
+        for (level in sustainLevels) {
+            if (detector.process(bufferWithRms(level), 512, nowMs = time)) strumCount++
+            time += 46L
+        }
+        assertEquals(1, strumCount)
+
+        // Strum #2 strikes at t = 1500ms while strings are still ringing at 3500: volume jumps to 12000
+        if (detector.process(bufferWithRms(12000), 512, nowMs = 1500L)) strumCount++
+        assertEquals("Subsequent strum on top of ringing strings must trigger Strum #2", 2, strumCount)
+    }
+
+    @Test
+    fun `softer strum following loud strum is registered`() {
+        val detector = StrumDetector(sensitivity = 0.6f, debounceMs = 350L)
+        fun bufferWithRms(targetRms: Short): ShortArray = ShortArray(512) { targetRms }
+
+        var strumCount = 0
+
+        // Very loud Strum #1
+        if (detector.process(bufferWithRms(22000), 512, nowMs = 1000L)) strumCount++
+        assertEquals(1, strumCount)
+
+        // Decays to 2800 RMS over 600ms
+        var time = 1046L
+        for (level in listOf<Short>(15000, 10000, 7000, 5000, 4000, 3200, 2800)) {
+            if (detector.process(bufferWithRms(level), 512, nowMs = time)) strumCount++
+            time += 46L
+        }
+        assertEquals(1, strumCount)
+
+        // Strum #2 is gentle (6000 RMS, much softer than Strum #1's 22000, but jumps over 2800 baseline)
+        if (detector.process(bufferWithRms(6000), 512, nowMs = 1600L)) strumCount++
+        assertEquals("Gentle strum following loud strum must trigger", 2, strumCount)
+    }
+
+    @Test
+    fun `steady continuous tone never retriggers during sustain`() {
+        val detector = StrumDetector(sensitivity = 0.6f, debounceMs = 350L)
+        val steadyBuffer = ShortArray(512) { 4000 }
+
+        var strumCount = 0
+        // Initial onset from silence triggers strum #1
+        if (detector.process(steadyBuffer, 512, nowMs = 1000L)) strumCount++
+        assertEquals(1, strumCount)
+
+        // Same continuous tone arrives every 46ms for 1.5 seconds
+        for (step in 1..30) {
+            val nowMs = 1000L + step * 46L
+            if (detector.process(steadyBuffer, 512, nowMs = nowMs)) strumCount++
+        }
+        assertEquals("Steady continuous signal must not trigger repeatedly after debounce", 1, strumCount)
+    }
+
+    @Test
+    fun `high sensitivity setting does not cause sustain runaway`() {
+        // High sensitivity: threshold = 400.0
+        val detector = StrumDetector(sensitivity = 1.0f, debounceMs = 350L)
+        fun bufferWithRms(targetRms: Short): ShortArray = ShortArray(512) { targetRms }
+
+        var strumCount = 0
+        // Loud strum at t = 1000ms
+        if (detector.process(bufferWithRms(16000), 512, nowMs = 1000L)) strumCount++
+        assertEquals(1, strumCount)
+
+        // Strings sustain at levels well above 400.0 (e.g. 2000, 1500, 900, 600)
+        val longDecay = listOf<Short>(
+            12000, 9000, 7000, 5000, 4000, 3000, 2500, // < 350ms
+            2000, 1700, 1500, 1300, 1100, 900, 700, 600 // > 350ms, all > 400
+        )
+        var time = 1046L
+        for (level in longDecay) {
+            if (detector.process(bufferWithRms(level), 512, nowMs = time)) strumCount++
+            time += 46L
+        }
+        assertEquals("High sensitivity must not retrigger on decaying sustain", 1, strumCount)
+    }
 }

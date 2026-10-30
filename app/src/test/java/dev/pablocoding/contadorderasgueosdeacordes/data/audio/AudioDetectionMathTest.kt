@@ -112,4 +112,50 @@ class AudioDetectionMathTest {
             )
         )
     }
+
+    @Test
+    fun `onset-aware shouldTriggerStrum respects baseline ratio`() {
+        val threshold = 1000.0
+        val debounceMs = 350L
+        val lastTime = 1000L
+        val nowMs = 1500L
+
+        // Null baseline (first sound or after gap) -> triggers when loud enough
+        assertTrue(
+            AudioDetectionMath.shouldTriggerStrum(
+                rms = 1500.0,
+                threshold = threshold,
+                nowMs = nowMs,
+                lastDetectionTimeMs = lastTime,
+                debounceMs = debounceMs,
+                baselineRms = null
+            )
+        )
+
+        // Baseline is 1200.0, rms is 1400.0 -> ratio is 1400/1200 = 1.16 < 1.35 -> false
+        assertFalse(
+            AudioDetectionMath.shouldTriggerStrum(
+                rms = 1400.0,
+                threshold = threshold,
+                nowMs = nowMs,
+                lastDetectionTimeMs = lastTime,
+                debounceMs = debounceMs,
+                baselineRms = 1200.0,
+                onsetRatio = 1.35
+            )
+        )
+
+        // Baseline is 1000.0, rms is 1500.0 -> ratio is 1.5 >= 1.35 -> true
+        assertTrue(
+            AudioDetectionMath.shouldTriggerStrum(
+                rms = 1500.0,
+                threshold = threshold,
+                nowMs = nowMs,
+                lastDetectionTimeMs = lastTime,
+                debounceMs = debounceMs,
+                baselineRms = 1000.0,
+                onsetRatio = 1.35
+            )
+        )
+    }
 }

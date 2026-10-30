@@ -19,9 +19,11 @@ import dev.pablocoding.contadorderasgueosdeacordes.data.db.dao.SessionDao
 import dev.pablocoding.contadorderasgueosdeacordes.data.repository.MetronomeRepositoryImpl
 import dev.pablocoding.contadorderasgueosdeacordes.data.repository.SessionHistoryRepositoryImpl
 import dev.pablocoding.contadorderasgueosdeacordes.data.repository.SessionRepositoryImpl
+import dev.pablocoding.contadorderasgueosdeacordes.data.repository.TunerRepositoryImpl
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.MetronomeRepository
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionHistoryRepository
 import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.SessionRepository
+import dev.pablocoding.contadorderasgueosdeacordes.domain.repository.TunerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,6 +46,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindMetronomeRepository(impl: MetronomeRepositoryImpl): MetronomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTunerRepository(impl: TunerRepositoryImpl): TunerRepository
 
     companion object {
 

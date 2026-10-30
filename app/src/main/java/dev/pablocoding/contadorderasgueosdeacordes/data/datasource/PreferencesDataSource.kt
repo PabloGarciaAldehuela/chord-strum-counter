@@ -2,10 +2,16 @@ package dev.pablocoding.contadorderasgueosdeacordes.data.datasource
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.NoteNaming
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerSettings
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerReadingMode
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.tuner.TunerTolerance
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.NoteNotationMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -16,6 +22,15 @@ private val SENSITIVITY_KEY    = floatPreferencesKey("mic_sensitivity")
 private val DEBOUNCE_KEY       = intPreferencesKey("strum_debounce_ms")
 private val METRONOME_BPM_KEY  = intPreferencesKey("metronome_bpm")
 private val CHORDS_KEY         = stringPreferencesKey("selected_practice_chords")
+
+private val TUNER_TUNING_KEY         = stringPreferencesKey("tuner_tuning_id")
+private val TUNER_REFERENCE_KEY      = intPreferencesKey("tuner_reference_pitch_hz")
+private val TUNER_SOUND_KEY          = booleanPreferencesKey("tuner_in_tune_sound")
+private val TUNER_LEFT_HANDED_KEY    = booleanPreferencesKey("tuner_left_handed")
+private val TUNER_NOTE_NAMING_KEY    = stringPreferencesKey("tuner_note_naming")
+private val TUNER_TOLERANCE_KEY      = stringPreferencesKey("tuner_tolerance")
+private val TUNER_READING_MODE_KEY   = stringPreferencesKey("tuner_reading_mode")
+private val NOTE_CLOCK_NOTATION_KEY  = stringPreferencesKey("note_clock_notation_mode")
 
 private const val DEFAULT_DURATION      = 60
 private const val DEFAULT_SENSITIVITY   = 0.6f
@@ -63,5 +78,52 @@ class PreferencesDataSource @Inject constructor(
 
     suspend fun saveChords(chords: List<String>) {
         dataStore.edit { it[CHORDS_KEY] = chords.filter { c -> c.isNotBlank() }.joinToString(",") }
+    }
+
+    /**
+     * @param defaultNoteNaming Used until the user picks a convention (derived from the device locale).
+     */
+    suspend fun getTunerSettings(defaultNoteNaming: NoteNaming = NoteNaming.LETTERS): TunerSettings =
+        dataStore.data.map { prefs ->
+            val defaults = TunerSettings()
+            TunerSettings(
+                tuningId = prefs[TUNER_TUNING_KEY] ?: defaults.tuningId,
+                referencePitchHz = (prefs[TUNER_REFERENCE_KEY] ?: defaults.referencePitchHz)
+                    .coerceIn(TunerSettings.MIN_REFERENCE_PITCH_HZ, TunerSettings.MAX_REFERENCE_PITCH_HZ),
+                inTuneSound = prefs[TUNER_SOUND_KEY] ?: defaults.inTuneSound,
+                leftHanded = prefs[TUNER_LEFT_HANDED_KEY] ?: defaults.leftHanded,
+                noteNaming = prefs[TUNER_NOTE_NAMING_KEY]
+                    ?.let { name -> NoteNaming.entries.firstOrNull { it.name == name } }
+                    ?: defaultNoteNaming,
+                tolerance = prefs[TUNER_TOLERANCE_KEY]
+                    ?.let { name -> TunerTolerance.entries.firstOrNull { it.name == name } }
+                    ?: defaults.tolerance,
+                readingMode = prefs[TUNER_READING_MODE_KEY]
+                    ?.let { name -> TunerReadingMode.entries.firstOrNull { it.name == name } }
+                    ?: defaults.readingMode
+            )
+        }.first()
+
+    suspend fun saveTunerSettings(settings: TunerSettings) {
+        dataStore.edit {
+            it[TUNER_TUNING_KEY] = settings.tuningId
+            it[TUNER_REFERENCE_KEY] = settings.referencePitchHz
+            it[TUNER_SOUND_KEY] = settings.inTuneSound
+            it[TUNER_LEFT_HANDED_KEY] = settings.leftHanded
+            it[TUNER_NOTE_NAMING_KEY] = settings.noteNaming.name
+            it[TUNER_TOLERANCE_KEY] = settings.tolerance.name
+            it[TUNER_READING_MODE_KEY] = settings.readingMode.name
+        }
+    }
+
+    suspend fun getNoteClockNotation(): NoteNotationMode =
+        dataStore.data.map { prefs ->
+            prefs[NOTE_CLOCK_NOTATION_KEY]?.let { name ->
+                NoteNotationMode.entries.firstOrNull { it.name == name }
+            } ?: NoteNotationMode.DUAL
+        }.first()
+
+    suspend fun saveNoteClockNotation(mode: NoteNotationMode) {
+        dataStore.edit { it[NOTE_CLOCK_NOTATION_KEY] = mode.name }
     }
 }
