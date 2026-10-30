@@ -101,6 +101,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
+import dev.pablocoding.contadorderasgueosdeacordes.domain.model.ChordLibrary
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordDiagramSheet
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.ChordSelectionSheet
 import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.KeepScreenOn
@@ -123,6 +124,7 @@ fun CounterScreen(
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showChordSelectionSheet by remember { mutableStateOf(false) }
     var viewingChordDiagram by remember { mutableStateOf<Chord?>(null) }
+    var viewingChordList by remember { mutableStateOf<List<Chord>>(ChordLibrary.allChords) }
     var showPermissionDialog by remember { mutableStateOf(false) }
 
     // Counter pulse animation — fires on every new strum detected
@@ -159,8 +161,10 @@ fun CounterScreen(
         }
     }
 
-    // Screen always-on while running
-    KeepScreenOn(enabled = uiState.isRunning)
+    // Keep screen awake during practice sessions, metronome playback, or chord inspection
+    KeepScreenOn(
+        enabled = uiState.keepScreenAwake && (uiState.isRunning || uiState.isMetronomePlaying || viewingChordDiagram != null)
+    )
 
     // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -333,6 +337,8 @@ fun CounterScreen(
                     chords = uiState.selectedChords,
                     isRunning = uiState.isRunning,
                     onChordClick = { chordName ->
+                        val routineChords = uiState.selectedChords.mapNotNull { viewModel.getChord(it) }
+                        viewingChordList = if (routineChords.isNotEmpty()) routineChords else ChordLibrary.allChords
                         viewingChordDiagram = viewModel.getChord(chordName)
                     },
                     onEditClick = { showChordSelectionSheet = true }
@@ -475,7 +481,10 @@ fun CounterScreen(
         ChordSelectionSheet(
             selectedChords = uiState.selectedChords,
             onChordsSelected = { viewModel.onChordsChange(it) },
-            onViewChordDiagram = { chord -> viewingChordDiagram = chord },
+            onViewChordDiagram = { chord ->
+                viewingChordList = ChordLibrary.allChords
+                viewingChordDiagram = chord
+            },
             onDismiss = { showChordSelectionSheet = false }
         )
     }
@@ -483,7 +492,18 @@ fun CounterScreen(
     // Chord Diagram Viewer
     viewingChordDiagram?.let { chord ->
         ChordDiagramSheet(
-            chord = chord,
+            chords = viewingChordList,
+            initialChord = chord,
+            selectedChords = uiState.selectedChords,
+            onToggleChordSelection = { chordName ->
+                val current = uiState.selectedChords
+                val updated = if (current.contains(chordName)) {
+                    if (current.size > 1) current.filter { it != chordName } else current
+                } else {
+                    if (current.size < 6) current + chordName else current
+                }
+                viewModel.onChordsChange(updated)
+            },
             onDismiss = { viewingChordDiagram = null }
         )
     }
@@ -500,9 +520,11 @@ fun CounterScreen(
                 currentDuration = uiState.durationSeconds,
                 currentSensitivity = uiState.sensitivity,
                 currentDebounceMs = uiState.debounceMs,
+                keepScreenAwake = uiState.keepScreenAwake,
                 onDurationSelected = { viewModel.onDurationChange(it) },
                 onSensitivityChange = { viewModel.onSensitivityChange(it) },
                 onDebounceChange = { viewModel.onDebounceChange(it) },
+                onKeepScreenAwakeChange = { viewModel.onKeepScreenAwakeChange(it) },
                 onDismiss = { showSettingsSheet = false }
             )
         }
@@ -1246,9 +1268,11 @@ private fun SettingsContent(
     currentDuration: Int,
     currentSensitivity: Float,
     currentDebounceMs: Int,
+    keepScreenAwake: Boolean,
     onDurationSelected: (Int) -> Unit,
     onSensitivityChange: (Float) -> Unit,
     onDebounceChange: (Int) -> Unit,
+    onKeepScreenAwakeChange: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     val durationPresets = listOf(30 to "30s", 60 to "1 min", 90 to "90s", 120 to "2 min")
@@ -1350,6 +1374,35 @@ private fun SettingsContent(
             )
         )
         SliderLabels("100ms (fast)", "800ms (slow)")
+
+        Spacer(modifier = Modifier.height(22.dp))
+
+        // ── Keep Screen Awake ──
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                SectionLabel("📱  Keep Screen Awake")
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Prevents device from sleeping during practice and while the metronome is running.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = keepScreenAwake,
+                onCheckedChange = onKeepScreenAwakeChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            )
+        }
 
         Spacer(modifier = Modifier.height(28.dp))
     }

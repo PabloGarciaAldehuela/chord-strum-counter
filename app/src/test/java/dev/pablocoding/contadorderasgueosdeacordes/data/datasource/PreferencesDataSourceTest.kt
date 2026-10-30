@@ -90,6 +90,19 @@ class PreferencesDataSourceTest {
     }
 
     @Test
+    fun `returns default keepScreenAwake true when not set`() = runTest(testDispatcher) {
+        assertEquals(true, preferencesDataSource.getKeepScreenAwake())
+    }
+
+    @Test
+    fun `saves and retrieves keepScreenAwake preference`() = runTest(testDispatcher) {
+        preferencesDataSource.saveKeepScreenAwake(false)
+        assertEquals(false, preferencesDataSource.getKeepScreenAwake())
+        preferencesDataSource.saveKeepScreenAwake(true)
+        assertEquals(true, preferencesDataSource.getKeepScreenAwake())
+    }
+
+    @Test
     fun `saves and retrieves custom chords filtering empty and whitespace`() = runTest(testDispatcher) {
         preferencesDataSource.saveChords(listOf("C", "  ", "G", "", "Am"))
         assertEquals(listOf("C", "G", "Am"), preferencesDataSource.getChords())
