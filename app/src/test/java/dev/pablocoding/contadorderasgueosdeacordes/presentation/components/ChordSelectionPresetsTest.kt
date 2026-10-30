@@ -11,7 +11,7 @@ class ChordSelectionPresetsTest {
     @Test
     fun `defaultPresets contains expected presets count`() {
         val presets = ChordSelectionPresets.defaultPresets
-        assertEquals(12, presets.size)
+        assertEquals(15, presets.size)
     }
 
     @Test
@@ -44,7 +44,10 @@ class ChordSelectionPresetsTest {
             listOf("Em", "D"),
             listOf("Am", "Em"),
             listOf("Am", "C"),
-            listOf("C", "Em")
+            listOf("C", "Em"),
+            listOf("Big G", "Cadd9"),
+            listOf("Em7", "Big G", "Dadd11/F#", "Cadd9"),
+            listOf("G5", "Cadd9", "Dsus4")
         )
 
         val actualChordsList = ChordSelectionPresets.defaultPresets.map { it.second }

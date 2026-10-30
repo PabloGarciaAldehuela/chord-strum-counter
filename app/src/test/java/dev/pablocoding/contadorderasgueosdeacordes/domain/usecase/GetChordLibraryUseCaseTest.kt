@@ -23,6 +23,9 @@ class GetChordLibraryUseCaseTest {
         assertTrue(chords.any { it.name == "A" })
         assertTrue(chords.any { it.name == "D" })
         assertTrue(chords.any { it.name == "Em" })
+        assertTrue(chords.any { it.name == "Big G" })
+        assertTrue(chords.any { it.name == "Cadd9" })
+        assertTrue(chords.any { it.name == "Dadd11/F#" })
     }
 
     @Test
@@ -31,6 +34,11 @@ class GetChordLibraryUseCaseTest {
         assertNotNull(chord)
         assertEquals("Am", chord?.name)
         assertEquals("A Minor", chord?.fullName)
+
+        val cadd9 = useCase.getChord("cadd9")
+        assertNotNull(cadd9)
+        assertEquals("Cadd9", cadd9?.name)
+        assertEquals("C Added 9th", cadd9?.fullName)
     }
 
     @Test
