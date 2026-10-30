@@ -74,6 +74,7 @@ class CounterViewModelTest {
         coEvery { sessionRepository.getPreferredSensitivity() } returns 0.6f
         coEvery { sessionRepository.getPreferredDebounce() } returns 350
         coEvery { getSelectedChords() } returns listOf("A", "D")
+        coEvery { sessionRepository.getKeepScreenAwake() } returns true
         every { getMetronomeState() } returns metronomeStateFlow
         every { getSessionHistory() } returns flowOf(emptyList())
         every { getPracticeStats(any(), any()) } returns flowOf(UserPracticeStats(totalStrums = 120L, currentStreakDays = 2))
@@ -413,5 +414,25 @@ class CounterViewModelTest {
 
         coVerify(exactly = 1) { clearSessionError() }
         coVerify(exactly = 1) { startSession(60, listOf("A", "D")) }
+    }
+
+    @Test
+    fun `onKeepScreenAwakeChange updates uiState and persists`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.uiState.test {
+            val initial = awaitItem()
+            assertTrue(initial.keepScreenAwake)
+
+            viewModel.onKeepScreenAwakeChange(false)
+            val updatedFalse = awaitItem()
+            assertFalse(updatedFalse.keepScreenAwake)
+            coVerify(exactly = 1) { sessionRepository.saveKeepScreenAwake(false) }
+
+            viewModel.onKeepScreenAwakeChange(true)
+            val updatedTrue = awaitItem()
+            assertTrue(updatedTrue.keepScreenAwake)
+            coVerify(exactly = 1) { sessionRepository.saveKeepScreenAwake(true) }
+        }
     }
 }

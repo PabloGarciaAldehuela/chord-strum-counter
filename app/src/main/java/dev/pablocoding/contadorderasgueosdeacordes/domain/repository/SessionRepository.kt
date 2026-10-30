@@ -16,5 +16,7 @@ interface SessionRepository {
     suspend fun savePreferredDebounce(ms: Int)
     suspend fun getPreferredChords(): List<String>
     suspend fun savePreferredChords(chords: List<String>)
+    suspend fun getKeepScreenAwake(): Boolean
+    suspend fun saveKeepScreenAwake(enabled: Boolean)
     suspend fun clearSessionError()
 }

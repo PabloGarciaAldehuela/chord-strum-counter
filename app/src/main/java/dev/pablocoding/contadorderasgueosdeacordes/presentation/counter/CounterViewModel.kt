@@ -46,6 +46,7 @@ data class CounterUiState(
     val metronomeBeat: Int = 1,
     val metronomeTempoName: String = "Andante",
     val selectedChords: List<String> = listOf("A", "D"),
+    val keepScreenAwake: Boolean = true,
     val lifetimeStrums: Long = 0,
     val currentStreakDays: Int = 0,
     val errorMessage: String? = null
@@ -76,18 +77,25 @@ class CounterViewModel @Inject constructor(
     private val _debounceMs      = MutableStateFlow(350)
     private val _selectedChords  = MutableStateFlow(listOf("A", "D"))
     private val _isPersonalBest  = MutableStateFlow(false)
+    private val _keepScreenAwake = MutableStateFlow(true)
 
     private data class Settings(
         val duration: Int,
         val sensitivity: Float,
         val debounceMs: Int,
         val selectedChords: List<String>,
-        val isPersonalBest: Boolean
+        val isPersonalBest: Boolean,
+        val keepScreenAwake: Boolean
     )
 
     private val _settings = combine(
-        _durationSeconds, _sensitivity, _debounceMs, _selectedChords, _isPersonalBest
-    ) { d, s, db, chords, pb -> Settings(d, s, db, chords, pb) }
+        combine(_durationSeconds, _sensitivity, _debounceMs) { d, s, db -> Triple(d, s, db) },
+        _selectedChords,
+        _isPersonalBest,
+        _keepScreenAwake
+    ) { (d, s, db), chords, pb, ksa ->
+        Settings(d, s, db, chords, pb, ksa)
+    }
 
     val uiState: StateFlow<CounterUiState> = combine(
         sessionRepository.sessionFlow,
@@ -118,6 +126,7 @@ class CounterViewModel @Inject constructor(
             metronomeBeat = metronome.currentBeat,
             metronomeTempoName = metronome.tempoName,
             selectedChords = if (session.isRunning || session.isFinished) session.chords else settings.selectedChords,
+            keepScreenAwake = settings.keepScreenAwake,
             lifetimeStrums = stats.totalStrums,
             currentStreakDays = stats.currentStreakDays,
             errorMessage = errorMsg
@@ -134,6 +143,7 @@ class CounterViewModel @Inject constructor(
             _sensitivity.value     = sessionRepository.getPreferredSensitivity()
             _debounceMs.value      = sessionRepository.getPreferredDebounce()
             _selectedChords.value  = getSelectedChords()
+            _keepScreenAwake.value = sessionRepository.getKeepScreenAwake()
         }
         viewModelScope.launch {
             sessionRepository.sessionFlow.collect { session ->
@@ -207,6 +217,13 @@ class CounterViewModel @Inject constructor(
     }
 
     fun getChord(name: String): Chord? = getChordLibrary.getChord(name)
+
+    fun onKeepScreenAwakeChange(enabled: Boolean) {
+        _keepScreenAwake.value = enabled
+        viewModelScope.launch {
+            sessionRepository.saveKeepScreenAwake(enabled)
+        }
+    }
 
     private suspend fun onSessionFinished(session: Session) {
         val result = SessionResult(

@@ -115,4 +115,7 @@ class SessionRepositoryImpl @Inject constructor(
 
     override suspend fun getPreferredChords(): List<String> = preferencesDataSource.getChords()
     override suspend fun savePreferredChords(chords: List<String>) = preferencesDataSource.saveChords(chords)
+
+    override suspend fun getKeepScreenAwake(): Boolean = preferencesDataSource.getKeepScreenAwake()
+    override suspend fun saveKeepScreenAwake(enabled: Boolean) = preferencesDataSource.saveKeepScreenAwake(enabled)
 }
