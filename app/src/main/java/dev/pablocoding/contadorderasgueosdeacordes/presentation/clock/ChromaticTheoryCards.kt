@@ -338,14 +338,17 @@ fun ChromaticIntervalCalculator(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = androidx.compose.foundation.BorderStroke(1.dp, AmberGold.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onPlayInterval() }
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val fretText = if (semitones == 1) "1 Fret on guitar (= 1 semitone)" else "$semitones Frets on guitar (= $semitones semitones)"
                     Text(
-                        text = "$semitones Frets on guitar (= $semitones semitones)",
+                        text = fretText,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = AmberGold
@@ -362,6 +365,13 @@ fun ChromaticIntervalCalculator(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "🔊 Tap to hear target tone",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AmberGold
+                    )
                 }
             }
         }
@@ -377,6 +387,12 @@ private fun NoteDropdownChip(
     var expanded by remember { mutableStateOf(false) }
     val note = ChromaticWheelData.NOTES[currentPitchClass]
 
+    fun formatNote(item: dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.ChromaticNote): String = when (notationMode) {
+        NoteNotationMode.LETTERS -> item.nameLetters
+        NoteNotationMode.SOLFEGE -> item.nameSolfege
+        NoteNotationMode.DUAL -> item.compactDualName()
+    }
+
     Box {
         Surface(
             shape = RoundedCornerShape(8.dp),
@@ -390,7 +406,7 @@ private fun NoteDropdownChip(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = note.compactDualName(),
+                    text = formatNote(note),
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     color = if (note.isNatural) EbonyDark else IvoryBone
@@ -407,7 +423,7 @@ private fun NoteDropdownChip(
                 androidx.compose.material3.DropdownMenuItem(
                     text = {
                         Text(
-                            text = item.compactDualName(),
+                            text = formatNote(item),
                             color = if (item.isNatural) AmberGold else IvoryBone
                         )
                     },

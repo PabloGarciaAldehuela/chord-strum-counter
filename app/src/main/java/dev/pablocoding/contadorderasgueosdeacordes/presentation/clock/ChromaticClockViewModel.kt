@@ -113,6 +113,12 @@ class ChromaticClockViewModel @Inject constructor(
         }
     }
 
+    fun playPitch(pitchClass: Int) {
+        if (_uiState.value.isAudioEnabled) {
+            playToneForPitchClass(pitchClass)
+        }
+    }
+
     private fun playToneForPitchClass(pitchClass: Int) {
         viewModelScope.launch {
             val note = ChromaticWheelData.NOTES[pitchClass.coerceIn(0, 11)]

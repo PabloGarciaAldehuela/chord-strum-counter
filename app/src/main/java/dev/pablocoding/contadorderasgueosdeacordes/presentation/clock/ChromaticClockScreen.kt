@@ -229,7 +229,7 @@ fun ChromaticClockScreen(
                         notationMode = uiState.notationMode,
                         onRootSelected = { viewModel.setCalcRoot(it) },
                         onTargetSelected = { viewModel.setCalcTarget(it) },
-                        onPlayInterval = { viewModel.playCurrentNote() }
+                        onPlayInterval = { viewModel.playPitch(uiState.calcTargetPitchClass) }
                     )
                     2 -> ChromaticTheoryCards(
                         notationMode = uiState.notationMode

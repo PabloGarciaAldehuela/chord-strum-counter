@@ -124,4 +124,20 @@ class ChromaticClockViewModelTest {
         advanceUntilIdle()
         coVerify(exactly = 1) { playTunerSoundUseCase.referenceTone(any()) }
     }
+
+    @Test
+    fun playPitchPlaysToneWhenAudioIsEnabled() = runTest {
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isAudioEnabled)
+
+        viewModel.playPitch(7) // G
+        advanceUntilIdle()
+        coVerify(atLeast = 1) { playTunerSoundUseCase.referenceTone(any()) }
+
+        viewModel.toggleAudio()
+        viewModel.playPitch(7)
+        advanceUntilIdle()
+        // verify no additional invocations occurred while muted
+        coVerify(exactly = 1) { playTunerSoundUseCase.referenceTone(any()) }
+    }
 }
