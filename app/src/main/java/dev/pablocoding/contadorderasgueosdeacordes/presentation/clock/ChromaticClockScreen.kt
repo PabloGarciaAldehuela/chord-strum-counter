@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.theory.NoteNotationMode
+import dev.pablocoding.contadorderasgueosdeacordes.presentation.components.KeepScreenOn
 import dev.pablocoding.contadorderasgueosdeacordes.ui.theme.AmberGold
 import dev.pablocoding.contadorderasgueosdeacordes.ui.theme.EbonyDark
 import dev.pablocoding.contadorderasgueosdeacordes.ui.theme.IvoryBone
@@ -54,6 +55,8 @@ fun ChromaticClockScreen(
     viewModel: ChromaticClockViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    KeepScreenOn()
 
     Scaffold { innerPadding ->
         Box(

@@ -22,6 +22,7 @@ private val SENSITIVITY_KEY    = floatPreferencesKey("mic_sensitivity")
 private val DEBOUNCE_KEY       = intPreferencesKey("strum_debounce_ms")
 private val METRONOME_BPM_KEY  = intPreferencesKey("metronome_bpm")
 private val CHORDS_KEY         = stringPreferencesKey("selected_practice_chords")
+private val KEEP_SCREEN_AWAKE_KEY = booleanPreferencesKey("keep_screen_awake")
 
 private val TUNER_TUNING_KEY         = stringPreferencesKey("tuner_tuning_id")
 private val TUNER_REFERENCE_KEY      = intPreferencesKey("tuner_reference_pitch_hz")
@@ -37,6 +38,7 @@ private const val DEFAULT_SENSITIVITY   = 0.6f
 private const val DEFAULT_DEBOUNCE      = 350
 private const val DEFAULT_METRONOME_BPM = 80
 private const val DEFAULT_CHORDS        = "A,D"
+private const val DEFAULT_KEEP_SCREEN_AWAKE = true
 
 @Singleton
 class PreferencesDataSource @Inject constructor(
@@ -78,6 +80,13 @@ class PreferencesDataSource @Inject constructor(
 
     suspend fun saveChords(chords: List<String>) {
         dataStore.edit { it[CHORDS_KEY] = chords.filter { c -> c.isNotBlank() }.joinToString(",") }
+    }
+
+    suspend fun getKeepScreenAwake(): Boolean =
+        dataStore.data.map { it[KEEP_SCREEN_AWAKE_KEY] ?: DEFAULT_KEEP_SCREEN_AWAKE }.first()
+
+    suspend fun saveKeepScreenAwake(enabled: Boolean) {
+        dataStore.edit { it[KEEP_SCREEN_AWAKE_KEY] = enabled }
     }
 
     /**

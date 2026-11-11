@@ -1,6 +1,9 @@
 package dev.pablocoding.contadorderasgueosdeacordes.presentation.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -20,10 +24,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.pablocoding.contadorderasgueosdeacordes.domain.model.Chord
@@ -62,7 +66,7 @@ object ChordSelectionPresets {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ChordSelectionSheet(
     selectedChords: List<String>,
@@ -178,7 +182,7 @@ fun ChordSelectionSheet(
 
             // All Chords List
             Text(
-                text = "CHORD LIBRARY (Tap chip to toggle, tap ℹ for fretboard diagram)",
+                text = "CHORD LIBRARY (Tap to toggle • Long-press or tap ℹ for shape)",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
@@ -193,43 +197,78 @@ fun ChordSelectionSheet(
                 ChordLibrary.allChords.forEach { chord ->
                     val isSelected = currentSelection.contains(chord.name)
 
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            if (isSelected) {
-                                if (currentSelection.size > 1) {
-                                    currentSelection = currentSelection.filter { it != chord.name }.toMutableList()
-                                }
-                            } else {
-                                if (currentSelection.size < 6) {
-                                    currentSelection = (currentSelection + chord.name).toMutableList()
-                                }
-                            }
-                        },
-                        label = { Text(chord.name, fontWeight = FontWeight.Bold) },
-                        leadingIcon = if (isSelected) {
-                            { Icon(Icons.Default.Check, contentDescription = "Selected", modifier = Modifier.size(16.dp)) }
-                        } else null,
-                        trailingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "View diagram",
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clickable { onViewChordDiagram(chord) }
-                            )
-                        },
+                    val containerColor = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    }
+                    val contentColor = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+
+                    Surface(
                         shape = RoundedCornerShape(50),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
-                            selectedTrailingIconColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            labelColor = MaterialTheme.colorScheme.onSurface,
-                            iconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
+                        color = containerColor,
+                        border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .combinedClickable(
+                                    onClick = {
+                                        if (isSelected) {
+                                            if (currentSelection.size > 1) {
+                                                currentSelection = currentSelection.filter { it != chord.name }.toMutableList()
+                                            }
+                                        } else {
+                                            if (currentSelection.size < 6) {
+                                                currentSelection = (currentSelection + chord.name).toMutableList()
+                                            }
+                                        }
+                                    },
+                                    onLongClick = {
+                                        onViewChordDiagram(chord)
+                                    }
+                                )
+                                .padding(
+                                    start = if (isSelected) 10.dp else 14.dp,
+                                    end = 4.dp,
+                                    top = 2.dp,
+                                    bottom = 2.dp
+                                )
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = contentColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = chord.name,
+                                fontWeight = FontWeight.Bold,
+                                color = contentColor,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            IconButton(
+                                onClick = { onViewChordDiagram(chord) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "View diagram for ${chord.name}",
+                                    tint = if (isSelected) contentColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
